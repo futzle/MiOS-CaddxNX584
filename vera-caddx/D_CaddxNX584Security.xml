@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<root xmlns="urn:schemas-upnp-org:device-1-0">
+  <specVersion>
+    <major>1</major>
+    <minor>0</minor>
+  </specVersion>
+  <device>
+    <deviceType>urn:schemas-futzle-com:device:caddx-alarm:1</deviceType>
+    <friendlyName>Caddx NX584 Security System</friendlyName>
+    <manufacturer>GE Network</manufacturer>
+    <manufacturerURL></manufacturerURL>
+    <modelDescription>Caddx NX584 Security System</modelDescription>
+    <modelName>NX584</modelName>
+    <modelNumber>1.0</modelNumber>
+    <modelURL></modelURL>
+    <protocol>raw</protocol>
+    <handleChildren>1</handleChildren>
+    <UDN>uuid:78f5ed30-db5e-46c7-a12e-838c9d4eb0e3</UDN>
+    <UPC>123456789</UPC>
+    <serviceList>
+    </serviceList>
+    <implementationList>
+      <implementationFile>I_CaddxNX584Security.xml</implementationFile>
+    </implementationList>
+    <presentationURL></presentationURL>
+  </device>
+</root>
