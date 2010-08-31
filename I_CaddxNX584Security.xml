@@ -36,9 +36,10 @@ INCOMING_EXPECTING_MESSAGE = 5     -- Receiving message body bytes
 -- Interface doesn't know which zones are valid, so have to
 -- provide this information manually.
 -- To do: configure this with a variable.
-MAXIMUM_ZONE = 3 -- Highest-numbered zone in system.
+MAXIMUM_ZONE = 16 -- Highest-numbered zone in system.
 
 LOG_DEBUG = true -- Debug I/O with interface.
+MAX_RETRIES = 3 -- This many failures indicates the system has failed.
 
 --
 -- Utility functions for bitwise operations.
@@ -98,16 +99,22 @@ function caddxInitialize(deviceId)
 
 	-- Ask the alarm system if it's configured to be
 	-- able to respond to the requests we'll give it.
-	setUpInterface(deviceId)
+	if (not setUpInterface(deviceId)) then
+		luup.set_failure(true, deviceId)
+		return false, "Failed to set up interface", "Caddx NX-584"
+	end
 
 	-- Set the clock on the interface.
 	if (CAPABILITY_SET_CLOCK) then
-		setInterfaceClock()
+		setInterfaceClock(deviceId)
 	end
 
 	-- Ask the alarm system about the global status.
 	-- Includes: faults; 4- or 6-digit PIN; list of valid partitions.
-	getSystemStatus(deviceId)
+	if (not getSystemStatus(deviceId)) then
+		luup.set_failure(true, deviceId)
+		return false, "Failed to get initial status", "Caddx NX-584"
+	end
 
 	-- Get the names of all zones (even invalid ones; we will
 	-- winnow out the invalid ones later).
@@ -218,14 +225,13 @@ end
 function sendMessageAndHandleResponse(deviceId, message, handlers)
 	luup.io.intercept()
 	local retries = 0
-	-- Todo: might need to re-send outgoing message.
-	sendMessage(message)
 	repeat
+		sendMessage(message)
 		-- Get a full message.
 		local a, b, c
 		repeat
 			local status
-			status, a, b, c = readByte(luup.io.read())
+			status, a, b, c = readByte(luup.io.read(3, deviceId))
 			if (status == 2) then
 				-- Bad checksum.  Send a negative acknowledgment message.
 				sendNegativeAcknowledgeMessage()
@@ -235,6 +241,10 @@ function sendMessageAndHandleResponse(deviceId, message, handlers)
 		if (handlers[a] ~= nil) then
 			-- This is the message I am looking for.
 			return handleMessage(deviceId, handlers, a, b, c)
+		elseif (a == "timeout") then
+			-- Timed out waiting for a response (e.g., during setup)
+			if (LOG_DEBUG) then luup.log("Timed out waiting for response, retrying") end
+			retries = retries + 1
 		else
 			-- This is a message I don't want.
 			if (LOG_DEBUG) then luup.log(string.format("Received inconvenient message 0x%02x", a)) end
@@ -243,11 +253,10 @@ function sendMessageAndHandleResponse(deviceId, message, handlers)
 			-- sendMessageRejectedMessage() but that doesn't seem to placate
 			-- the alarm system.
 			if (c) then sendPositiveAcknowledgeMessage() end  -- Yes, dear.
-			sendMessage(message)
-			retries = retries + 1
 		end
 	until (retries == MAX_RETRIES)
-	-- TODO: Set failure on the luup device.
+	luup.set_failure(true)
+	return false
 end
 
 -- setUpInterface(deviceId)
@@ -258,7 +267,7 @@ end
 function setUpInterface(deviceId)
 	if (LOG_DEBUG) then luup.log("Sending message and waiting for response: 0x21 Interface Configuration Request") end
 
-	sendMessageAndHandleResponse(deviceId, "\033", 
+	return sendMessageAndHandleResponse(deviceId, "\033", 
 		{
 			[1] = function (deviceId, message)
 				if (LOG_DEBUG) then luup.log("Handling message: 0x01 Interface Configuration") end
@@ -328,9 +337,10 @@ end
 -- Tell the alarm system the current time.  It uses this when
 -- it communicates with the back-to-base monitoring service
 -- and it may display it on alphanumeric keypads.
-function setInterfaceClock()
+function setInterfaceClock(deviceId)
+	if (LOG_DEBUG) then luup.log("Sending message and waiting for response: 0x3b Set Interface Clock") end
 	local timeTable = os.date("*t")
-	sendMessageAndHandleResponse(deviceId, string.char(0x3b + 128) .. string.format("%c%c%c%c%c%c",
+	return sendMessageAndHandleResponse(deviceId, string.char(0x3b + 128) .. string.format("%c%c%c%c%c%c",
 			timeTable["year"] % 100,
 			timeTable["month"],
 			timeTable["day"],
@@ -342,7 +352,12 @@ function setInterfaceClock()
 				return 0
 			end,
 			[31] = function (deviceId, message)
-				if (LOG_DEBUG) then luup.log("Cannot set clock on interface") end
+				if (LOG_DEBUG) then luup.log("Failed to set clock on interface") end
+				return 0
+			end,
+			["timeout"] = function (deviceId, message)
+				-- Not the end of the world.
+				if (LOG_DEBUG) then luup.log("Timeout while setting clock on interface") end
 				return 0
 			end,
 		}
@@ -359,7 +374,7 @@ function getSystemStatus(deviceId)
 	PARTITION_VALID = {}
 
 	-- Callbacks to handle System Status request.
-	sendMessageAndHandleResponse(deviceId, "\040", 
+	return sendMessageAndHandleResponse(deviceId, "\040", 
 		{
 			[8] = function (deviceId, message)
 				if (LOG_DEBUG) then luup.log("Handling message: 0x08 System Status") end
@@ -421,7 +436,13 @@ function getZoneName(deviceId, z)
 				-- The interface can't give me a zone name after all.
 				zoneExpected = true
 				return 0
-			end
+			end,
+			["timeout"] = function (deviceId, message)
+				if (LOG_DEBUG) then luup.log("Timeout while getting zone name") end
+				-- The interface can't give me a zone name after all.
+				zoneExpected = true
+				return 0
+			end,
 		}
 	)
 	return zoneExpected
@@ -819,12 +840,14 @@ end
 -- Figure out which function should handle this message, and call that function
 -- with the message.
 function handleMessage(deviceId, handlers, messageType, message, acknowledge)
-	if (acknowledge) then
+	if (messageType == "timeout") then
+		if (LOG_DEBUG) then luup.log(string.format("Handling timeout", messageType)) end
+	elseif (acknowledge) then
 		if (LOG_DEBUG) then luup.log(string.format("Received good message 0x%02x, acknowledge requested", messageType)) end
 	else
 		if (LOG_DEBUG) then luup.log(string.format("Received good message 0x%02x", messageType)) end
 	end
-	if (LOG_DEBUG) then logMessage("Incoming message body:", message) end
+	if (LOG_DEBUG and message ~= nil) then logMessage("Incoming message body:", message) end
 	if (handlers[messageType] ~= nil) then
 		local f = handlers[messageType]
 		local status = f(deviceId, message)
@@ -836,6 +859,7 @@ function handleMessage(deviceId, handlers, messageType, message, acknowledge)
 	else
 		sendMessageRejectedMessage()
 	end
+	return true
 end
 
 -- logMessage(prefix, message)
@@ -864,7 +888,7 @@ function readByte(lul_data)
 	end
 	if (lul_data == nil) then
 		if (LOG_DEBUG) then luup.log("Input is nil") end
-		return
+		return 4, "timeout"
 	end
 	local b = string.byte(lul_data)
 	if (b == 0x7e) then
