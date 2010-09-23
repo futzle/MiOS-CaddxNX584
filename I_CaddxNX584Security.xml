@@ -25,6 +25,7 @@
 
 ALARM_SERVICEID = "urn:schemas-futzle-com:serviceId:CaddxNX584Security1"
 ALARM_PARTITION_SERVICEID = "urn:micasaverde-com:serviceId:AlarmPartition1"
+ALARM_ZONE_SERVICEID = "urn:micasaverde-com:serviceId:SecuritySensor1"
 
 INCOMING_EXPECTING_START = 0       -- Between messages
 INCOMING_EXPECTING_LENGTH = 1      -- Received start byte 0x7e
@@ -35,7 +36,6 @@ INCOMING_EXPECTING_MESSAGE = 5     -- Receiving message body bytes
 
 -- Interface doesn't know which zones are valid, so have to
 -- provide this information manually.
--- To do: configure this with a variable.
 MAXIMUM_ZONE = 16 -- Highest-numbered zone in system.
 
 LOG_DEBUG = true -- Debug I/O with interface.
@@ -97,6 +97,27 @@ function caddxInitialize(deviceId)
 	CHECKSUM2 = 0
 	LENGTH = 0
 
+	-- Get a list of zones to query.
+	-- Rationale: The Caddx protocol doesn't provide this information
+	-- so the plugin would have to guess the highest-numbered zones.
+	-- We'd probably get this wrong.  Furthermore, querying zones is
+	-- slow so it's worth letting the user provide an explicit list.
+	if (luup.variable_get(ALARM_SERVICEID, "Zones", deviceId) == nil) then
+		-- Populate an initial list using MAXIMUM_ZONE.
+		local zoneList = ""
+		for zone = 1,MAXIMUM_ZONE do
+			zoneList = zoneList .. "," .. zone
+		end
+		zoneList = string.sub(zoneList, 2) -- Skip that first comma
+		luup.variable_set(ALARM_SERVICEID, "Zones", zoneList, deviceId)
+	end
+	local zoneList = luup.variable_get(ALARM_SERVICEID, "Zones", deviceId)
+	local zones = {}
+	for zone in string.gmatch(zoneList, "%d+") do
+		zones[tonumber(zone)] = true
+    end
+
+
 	-- Ask the alarm system if it's configured to be
 	-- able to respond to the requests we'll give it.
 	if (not setUpInterface(deviceId)) then
@@ -119,12 +140,14 @@ function caddxInitialize(deviceId)
 	-- Get the names of all zones (even invalid ones; we will
 	-- winnow out the invalid ones later).
 	ZONE_STATUS = {}
-	for zone = 1,MAXIMUM_ZONE do
+	for zone in pairs(zones) do
 		-- Pick a default name in case we can't get the zone's real name.
 		ZONE_STATUS[zone] = {
 			["name"] = "Zone " .. zone
 		}
-		if (CAPABILITY_ZONE_NAME) then
+	end
+	if (CAPABILITY_ZONE_NAME) then
+		for zone in pairs(zones) do
 			-- Ask the interface for the zone name.
 			if (LOG_DEBUG) then luup.log("Getting zone name for " .. zone) end
 			repeat until getZoneName(deviceId, zone)
@@ -163,7 +186,7 @@ function caddxInitialize(deviceId)
 	-- Includes: zone valid
 	ZONE_CONFIGURED = {}
 	ZONE_VALID = {}
-	for zone = 1,MAXIMUM_ZONE do
+	for zone in pairs(zones) do
 		ZONE_CONFIGURED[zone] = false
 		ZONE_STATUS[zone] = {}
 	end
@@ -506,10 +529,18 @@ function setUpZone(deviceId, childDevices, z)
 				if (LOG_DEBUG) then luup.log("Handling message: 0x04 Zone Status") end
 				if (string.byte(string.sub(message,1)) == z - 1) then
 					-- This is the zone we were asking about.
+					-- See if the user has set variables on the parent device that say what
+					-- type of sensor this is.  Otherwise pick a default.
+					local deviceType = luup.variable_get(ALARM_SERVICEID, "ZoneDeviceType" .. z, deviceId)
+					local deviceFile = luup.variable_get(ALARM_SERVICEID, "ZoneDeviceFile" .. z, deviceId)
+					if (deviceType == nil or deviceFile == nil) then
+						deviceType = "urn:schemas-micasaverde-com:device:MotionSensor:1"
+						deviceFile = "D_MotionSensor1.xml"
+					end
 					luup.chdev.append(
 						deviceId, childDevices,
 						"Zone-" .. z, ZONE_STATUS[z]["name"],
-						"urn:schemas-micasaverde-com:device:MotionSensor:1", "D_MotionSensor1.xml",
+						deviceType, deviceFile,
 						"I_CaddxNX584Security.xml", "", false
 					)
 					processZoneStatusMessage(message)
@@ -659,15 +690,15 @@ function updateZoneDevice(deviceId, zone)
 
 		local tripped = ZONE_STATUS[zone]["isFaulted"] and "1" or "0"
 		if (LOG_DEBUG) then luup.log("Tripped: " .. tripped) end
-		if (luup.variable_get("urn:micasaverde-com:serviceId:SecuritySensor1", "Tripped", zoneDevice) ~= tripped) then
-			luup.variable_set("urn:micasaverde-com:serviceId:SecuritySensor1", "Tripped", tripped, zoneDevice)
+		if (luup.variable_get(ALARM_ZONE_SERVICEID, "Tripped", zoneDevice) ~= tripped) then
+			luup.variable_set(ALARM_ZONE_SERVICEID, "Tripped", tripped, zoneDevice)
 		end
 
 		-- Invert logic because alarm panel speaks of "is bypassed".
 		local armed = ZONE_STATUS[zone]["isBypassed"] and "0" or "1"
 		if (LOG_DEBUG) then luup.log("Armed: " .. armed) end
-		if (luup.variable_get("urn:micasaverde-com:serviceId:SecuritySensor1", "Armed", zoneDevice) ~= armed) then
-			luup.variable_set("urn:micasaverde-com:serviceId:SecuritySensor1", "Armed", armed, zoneDevice)
+		if (luup.variable_get(ALARM_ZONE_SERVICEID, "Armed", zoneDevice) ~= armed) then
+			luup.variable_set(ALARM_ZONE_SERVICEID, "Armed", armed, zoneDevice)
 		end
 	end
 end
