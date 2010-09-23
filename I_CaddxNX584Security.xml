@@ -188,7 +188,6 @@ function caddxInitialize(deviceId)
 	ZONE_VALID = {}
 	for zone in pairs(zones) do
 		ZONE_CONFIGURED[zone] = false
-		ZONE_STATUS[zone] = {}
 	end
 	repeat
 		-- Do this until we are satisfied that we are done.
@@ -537,6 +536,7 @@ function setUpZone(deviceId, childDevices, z)
 						deviceType = "urn:schemas-micasaverde-com:device:MotionSensor:1"
 						deviceFile = "D_MotionSensor1.xml"
 					end
+				        if (LOG_DEBUG) then luup.log(string.format("Zone %d (%s): %s %s", z, ZONE_STATUS[z]["name"], deviceFile, deviceType)) end
 					luup.chdev.append(
 						deviceId, childDevices,
 						"Zone-" .. z, ZONE_STATUS[z]["name"],
@@ -645,6 +645,7 @@ function updatePartitionDevice(deviceId, partition)
 	if (partition ~= nil) then
 		if (LOG_DEBUG) then luup.log("Setting state for partition " .. partition) end
 		local partitionDevice = findChild(deviceId, "Partition-" .. partition)
+		if (partitionDevice == nil) then return end
 
 		local armed = PARTITION_STATUS[partition]["isArmed"] and "1" or "0"
 		if (LOG_DEBUG) then luup.log("Armed: " .. armed) end
@@ -687,6 +688,7 @@ function updateZoneDevice(deviceId, zone)
 	if (zone ~= nil) then
 		if (LOG_DEBUG) then luup.log("Setting state for zone " .. zone) end
 		local zoneDevice = findChild(deviceId, "Zone-" .. zone)
+		if (zoneDevice == nil) then return end
 
 		local tripped = ZONE_STATUS[zone]["isFaulted"] and "1" or "0"
 		if (LOG_DEBUG) then luup.log("Tripped: " .. tripped) end
@@ -1199,7 +1201,7 @@ end
 
 				if (LOG_DEBUG) then luup.log("Job: Adding job") end
 				addPendingJob(getJobId(lul_job),
-					"\062\002" .. string.char(partition-1),
+					"\062\002" .. string.char(2 ^ (partition-1)),
 					{
 						[29] = function(deviceId, message)
 							-- Nothing more to do.  The interface will
@@ -1285,7 +1287,7 @@ end
 
 				if (LOG_DEBUG) then luup.log("Job: Adding job") end
 				addPendingJob(getJobId(lul_job),
-					"\062\000" .. string.char(partition-1),
+					"\062\000" .. string.char(2 ^ (partition-1)),
 					{
 						[29] = function(deviceId, message)
 							-- Nothing more to do.  The interface will
