@@ -230,6 +230,7 @@ function caddxInitialize(deviceId)
 		[6] = handlePartitionStatusMessage,
 		[7] = handlePartitionsSnapshotMessage,
 		[8] = handleSystemStatusMessage,
+		[10] = handleLogEventMessage,
 	}
 	TEMPORARY_HANDLERS = {}
 
@@ -647,13 +648,13 @@ function updatePartitionDevice(deviceId, partition)
 		local partitionDevice = findChild(deviceId, "Partition-" .. partition)
 		if (partitionDevice == nil) then return end
 
-		local armed = PARTITION_STATUS[partition]["isArmed"] and "1" or "0"
+		local armed = PARTITION_STATUS[partition]["isArmed"] and not PARTITION_STATUS[partition]["isPartial"] and "1" or "0"
 		if (LOG_DEBUG) then luup.log("Armed: " .. armed) end
 		if (luup.variable_get(ALARM_PARTITION_SERVICEID, "Armed", partitionDevice) ~= armed) then
 			luup.variable_set(ALARM_PARTITION_SERVICEID, "Armed", armed, partitionDevice)
 		end
 
-		local stay = PARTITION_STATUS[partition]["isPartial"] and not PARTITION_STATUS[partition]["isArmed"] and "1" or "0"
+		local stay = PARTITION_STATUS[partition]["isPartial"] and PARTITION_STATUS[partition]["isArmed"] and "1" or "0"
 		if (LOG_DEBUG) then luup.log("StayArmed: " .. stay) end
 		if (luup.variable_get(ALARM_PARTITION_SERVICEID, "StayArmed", partitionDevice) ~= stay) then
 			luup.variable_set(ALARM_PARTITION_SERVICEID, "StayArmed", stay, partitionDevice)
@@ -716,7 +717,7 @@ function handleZoneStatusMessage(deviceId, message)
 	if (LOG_DEBUG) then luup.log("Handling message: 0x04 Zone Status") end
 	local zone = processZoneStatusMessage(message)
 	updateZoneDevice(deviceId, zone)
-        return 0
+	return 0
 end
 
 -- handleZonesSnapshotMessage(deviceId, message)
@@ -730,7 +731,7 @@ function handleZonesSnapshotMessage(deviceId, message)
 			updateZoneDevice(deviceId, zone)
 		end
 	end
-        return 0
+	return 0
 end
 
 -- handlePartitionStatusMessage(deviceId, message)
@@ -740,7 +741,7 @@ function handlePartitionStatusMessage(deviceId, message)
 	if (LOG_DEBUG) then luup.log("Handling message: 0x06 Partition Status") end
 	local partition = processPartitionStatusMessage(message)
 	updatePartitionDevice(deviceId, partition)
-        return 0
+	return 0
 end
 
 -- handlePartitionsSnapshotMessage(deviceId, message)
@@ -754,15 +755,20 @@ function handlePartitionsSnapshotMessage(deviceId, message)
 			updatePartitionDevice(deviceId, partition)
 		end
 	end
-        return 0
+	return 0
 end
 
 function handleSystemStatusMessage()
 	if (LOG_DEBUG) then luup.log("Handling message: 0x08 System Status") end
 	-- Anything to do? We shouldn't be getting this message spontaneously, should we?
-        return 0
+	return 0
 end
 
+function handleLogEventMessage()
+	if (LOG_DEBUG) then luup.log("Handling message: 0x0a Log Event") end
+	-- To do.
+	return 0
+end
 
 --
 -- Utility functions for communicating with the interface.
@@ -889,8 +895,10 @@ function handleMessage(deviceId, handlers, messageType, message, acknowledge)
 		elseif (acknowledge) then
 			sendCommandFailedMessage()
 		end
-	else
-		sendMessageRejectedMessage()
+	elseif (acknowledge) then
+		-- Spec says we should send a Message Reject, but this doesn't
+		-- seem to shut the alarm system up.  Pretend we understood.
+		sendPositiveAcknowledgeMessage()
 	end
 	return true
 end
@@ -1200,8 +1208,11 @@ end
 				local partition = tonumber(string.match(luup.devices[lul_device].id, "%d+"))
 
 				if (LOG_DEBUG) then luup.log("Job: Adding job") end
+				-- Protocol doc says that command (second byte) for "Exit" mode should be message 2,
+				-- but on my system it seems that message 0 does the job.  Hmm.  Hope it isn't
+				-- different depending on what panel you've got.  That'd be crazy.
 				addPendingJob(getJobId(lul_job),
-					"\062\002" .. string.char(2 ^ (partition-1)),
+					"\062\000" .. string.char(2 ^ (partition-1)),
 					{
 						[29] = function(deviceId, message)
 							-- Nothing more to do.  The interface will
@@ -1286,6 +1297,10 @@ end
 				local partition = tonumber(string.match(luup.devices[lul_device].id, "%d+"))
 
 				if (LOG_DEBUG) then luup.log("Job: Adding job") end
+				-- Help! The communication protocol doesn't seem to match reality on my panel.
+				-- Command (byte 2) of 0 should enter Stay mode, but it enters Armed mode.
+				-- I don't really want to try other values, because some of them are the
+				-- panic button.  Volunteers welcome!
 				addPendingJob(getJobId(lul_job),
 					"\062\000" .. string.char(2 ^ (partition-1)),
 					{
