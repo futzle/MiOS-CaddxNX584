@@ -442,8 +442,8 @@ function getZoneName(deviceId, z)
 					-- This isn't the zone I was asking about.
 					return 0
 				end
-				-- Next 16 bytes are the zone name.
-				local zoneName = string.gsub(string.sub(message,2,17), "%z", "")
+				-- Next 16 bytes are the zone name.  Strip trailing spaces.
+				local zoneName = string.gsub(string.sub(message,2,17), " *$", "")
 				if (zoneName == "") then
 					-- No name, so stop trying.
 					zoneExpected = true
