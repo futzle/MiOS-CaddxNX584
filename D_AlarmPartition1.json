@@ -36,7 +36,10 @@
                 {
                     "id": "2",
                     "isSingle": "1"
-                }
+                },
+                {
+                    "id": "3"
+                },
             ],
             "Control": [
                 {
@@ -170,6 +173,7 @@
                     } 
                 },
                 {
+                    "ControlGroup": "3",
                     "ControlType": "button",
                     "Label": {
                         "lang_tag": "cmd_set",
@@ -336,6 +340,84 @@
                         "suffix" : "",
                         "name": "NewState" 
                     } 
+                } 
+            } 
+        },
+        "group_2": {
+            "cmd_1": {
+                "label": "Arm Partition (PIN)",
+                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                "action": "RequestArm",
+                "argumentList": {
+                    "argument_1": {
+                        "dataType": "ui1",
+                        "defaultValue": "1234",
+                        "allowedValueRange": {
+                            "minimum": "0",
+                            "maximum": "999999999999" 
+                        },
+                        "prefix" : "PINCode",
+                        "suffix" : "(0-999999999999)",
+                        "name": "PINCode" 
+                    }
+                } 
+            } 
+        },
+        "group_3": {
+            "cmd_1": {
+                "label": "Quick Arm Partition",
+                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                "action": "RequestQuickArm",
+                "argumentList": {
+                } 
+            } 
+        },
+        "group_4": {
+            "cmd_1": {
+                "label": "Stay Arm Partition (PIN)",
+                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                "action": "RequestStayArm",
+                "argumentList": {
+                    "argument_1": {
+                        "dataType": "ui1",
+                        "defaultValue": "1234",
+                        "allowedValueRange": {
+                            "minimum": "0",
+                            "maximum": "999999999999" 
+                        },
+                        "prefix" : "PINCode",
+                        "suffix" : "(0-999999999999)",
+                        "name": "PINCode" 
+                    }
+                } 
+            } 
+        },
+        "group_5": {
+            "cmd_1": {
+                "label": "Quick Stay Arm Partition",
+                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                "action": "RequestQuickStayArm",
+                "argumentList": {
+                } 
+            } 
+        },
+        "group_6": {
+            "cmd_1": {
+                "label": "Disarm Partition (PIN)",
+                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                "action": "RequestDisarm",
+                "argumentList": {
+                    "argument_1": {
+                        "dataType": "ui1",
+                        "defaultValue": "1234",
+                        "allowedValueRange": {
+                            "minimum": "0",
+                            "maximum": "999999999999" 
+                        },
+                        "prefix" : "PINCode",
+                        "suffix" : "(0-999999999999)",
+                        "name": "PINCode" 
+                    }
                 } 
             } 
         } 
