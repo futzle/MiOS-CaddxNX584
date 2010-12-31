@@ -65,6 +65,21 @@
       </argumentList>
     </action>
     <action>
+      <name>RequestMedicalPanic</name>
+      <argumentList>
+      </argumentList>
+    </action>
+    <action>
+      <name>RequestFirePanic</name>
+      <argumentList>
+      </argumentList>
+    </action>
+    <action>
+      <name>RequestPolicePanic</name>
+      <argumentList>
+      </argumentList>
+    </action>
+    <action>
       <name>SetVirtualInput</name>
       <argumentList>
         <argument>

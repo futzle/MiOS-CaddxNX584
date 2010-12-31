@@ -1418,5 +1418,143 @@ end
 				checkJobComplete(lul_job)
 			</timeout>
 		</action>
+		<action>
+			<serviceId>urn:micasaverde-com:serviceId:AlarmPartition1</serviceId>
+			<name>RequestMedicalPanic</name>
+			<job>
+				if (LOG_DEBUG) then luup.log("Job: Partition: RequestMedicalPanic " .. lul_device .. " job " .. getJobId(lul_job)) end
+				
+				if (luup.variable_get(ALARM_SERVICEID, "EnablePanic", lul_device) ~= "1") then
+					-- Panic disabled; return error.
+					return 2, nil
+				end
+				if (not CAPABILITY_SECONDARY_KEYPAD) then
+					-- Cannot send panic; return error.
+					return 2, nil
+				end
+				local partition = tonumber(string.match(luup.devices[lul_device].id, "%d+"))
+
+				if (LOG_DEBUG) then luup.log("Job: Adding job") end
+				addPendingJob(getJobId(lul_job),
+					"\062\005" .. string.char(2 ^ (partition-1)),
+					{
+						[29] = function(deviceId, message)
+							-- Nothing more to do.  The interface will
+							-- send a snapshot with the updated info RSN,
+							-- and we'll update the partition device then.
+							JOBS[getJobId(lul_job)]["complete"] = 4
+							return 0
+						end,
+						[31] = function(deviceId, message)
+							JOBS[getJobId(lul_job)]["complete"] = 2
+							return 0
+						end,
+					}
+				)
+				if (LOG_DEBUG) then luup.log("Job: Processing send queue") end
+				processSendQueue()
+				if (LOG_DEBUG) then luup.log("Job: Done") end
+				-- Either the timeout or incoming task will be called next.
+				return 5, 10
+			</job>
+			<incoming>
+				checkJobComplete(lul_job)
+			</incoming>
+			<timeout>
+				checkJobComplete(lul_job)
+			</timeout>
+		</action>
+		<action>
+			<serviceId>urn:micasaverde-com:serviceId:AlarmPartition1</serviceId>
+			<name>RequestFirePanic</name>
+			<job>
+				if (LOG_DEBUG) then luup.log("Job: Partition: RequestFirePanic " .. lul_device .. " job " .. getJobId(lul_job)) end
+				
+				if (luup.variable_get(ALARM_SERVICEID, "EnablePanic", lul_device) ~= "1") then
+					-- Panic disabled; return error.
+					return 2, nil
+				end
+				if (not CAPABILITY_SECONDARY_KEYPAD) then
+					-- Cannot send panic; return error.
+					return 2, nil
+				end
+				local partition = tonumber(string.match(luup.devices[lul_device].id, "%d+"))
+
+				if (LOG_DEBUG) then luup.log("Job: Adding job") end
+				addPendingJob(getJobId(lul_job),
+					"\062\004" .. string.char(2 ^ (partition-1)),
+					{
+						[29] = function(deviceId, message)
+							-- Nothing more to do.  The interface will
+							-- send a snapshot with the updated info RSN,
+							-- and we'll update the partition device then.
+							JOBS[getJobId(lul_job)]["complete"] = 4
+							return 0
+						end,
+						[31] = function(deviceId, message)
+							JOBS[getJobId(lul_job)]["complete"] = 2
+							return 0
+						end,
+					}
+				)
+				if (LOG_DEBUG) then luup.log("Job: Processing send queue") end
+				processSendQueue()
+				if (LOG_DEBUG) then luup.log("Job: Done") end
+				-- Either the timeout or incoming task will be called next.
+				return 5, 10
+			</job>
+			<incoming>
+				checkJobComplete(lul_job)
+			</incoming>
+			<timeout>
+				checkJobComplete(lul_job)
+			</timeout>
+		</action>
+		<action>
+			<serviceId>urn:micasaverde-com:serviceId:AlarmPartition1</serviceId>
+			<name>RequestPolicePanic</name>
+			<job>
+				if (LOG_DEBUG) then luup.log("Job: Partition: RequestPolicePanic " .. lul_device .. " job " .. getJobId(lul_job)) end
+				
+				if (luup.variable_get(ALARM_SERVICEID, "EnablePanic", lul_device) ~= "1") then
+					-- Panic disabled; return error.
+					return 2, nil
+				end
+				if (not CAPABILITY_SECONDARY_KEYPAD) then
+					-- Cannot send panic; return error.
+					return 2, nil
+				end
+				local partition = tonumber(string.match(luup.devices[lul_device].id, "%d+"))
+
+				if (LOG_DEBUG) then luup.log("Job: Adding job") end
+				addPendingJob(getJobId(lul_job),
+					"\062\004" .. string.char(2 ^ (partition-1)),
+					{
+						[29] = function(deviceId, message)
+							-- Nothing more to do.  The interface will
+							-- send a snapshot with the updated info RSN,
+							-- and we'll update the partition device then.
+							JOBS[getJobId(lul_job)]["complete"] = 4
+							return 0
+						end,
+						[31] = function(deviceId, message)
+							JOBS[getJobId(lul_job)]["complete"] = 2
+							return 0
+						end,
+					}
+				)
+				if (LOG_DEBUG) then luup.log("Job: Processing send queue") end
+				processSendQueue()
+				if (LOG_DEBUG) then luup.log("Job: Done") end
+				-- Either the timeout or incoming task will be called next.
+				return 5, 10
+			</job>
+			<incoming>
+				checkJobComplete(lul_job)
+			</incoming>
+			<timeout>
+				checkJobComplete(lul_job)
+			</timeout>
+		</action>
 	</actionList>
 </implementation>

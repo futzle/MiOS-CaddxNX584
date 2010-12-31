@@ -420,6 +420,33 @@
                     }
                 } 
             } 
+        },
+        "group_7": {
+            "cmd_1": {
+                "label": "Medical Panic",
+                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                "action": "RequestMedicalPanic",
+                "argumentList": {
+                } 
+            } 
+        },
+        "group_8": {
+            "cmd_1": {
+                "label": "Fire Panic",
+                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                "action": "RequestFirePanic",
+                "argumentList": {
+                } 
+            } 
+        } 
+        "group_9": {
+            "cmd_1": {
+                "label": "Police Panic",
+                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                "action": "RequestPolicePanic",
+                "argumentList": {
+                } 
+            } 
         } 
     } 
 }
