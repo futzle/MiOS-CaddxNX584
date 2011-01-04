@@ -1528,7 +1528,7 @@ end
 
 				if (LOG_DEBUG) then luup.log("Job: Adding job") end
 				addPendingJob(getJobId(lul_job),
-					"\062\004" .. string.char(2 ^ (partition-1)),
+					"\062\006" .. string.char(2 ^ (partition-1)),
 					{
 						[29] = function(deviceId, message)
 							-- Nothing more to do.  The interface will
