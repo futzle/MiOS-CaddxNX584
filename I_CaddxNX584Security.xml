@@ -667,7 +667,7 @@ function updatePartitionDevice(deviceId, partition)
 			luup.variable_set(ALARM_PARTITION_SERVICEID, "Disarmed", disarmed, partitionDevice)
 		end
 
-		local breached = PARTITION_STATUS[partition]["isSiren"] or PARTITION_STATUS[partition]["wasSiren"] and "1" or "0"
+		local breached = (PARTITION_STATUS[partition]["isSiren"] or PARTITION_STATUS[partition]["wasSiren"]) and "1" or "0"
 		if (LOG_DEBUG) then luup.log("Breached: " .. breached) end
 		if (luup.variable_get(ALARM_PARTITION_SERVICEID, "Breached", partitionDevice) ~= breached) then
 			luup.variable_set(ALARM_PARTITION_SERVICEID, "Breached", breached, partitionDevice)
