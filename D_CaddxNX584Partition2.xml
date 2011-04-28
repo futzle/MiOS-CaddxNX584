@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<root xmlns="urn:schemas-upnp-org:device-1-0">
+  <specVersion>
+    <major>1</major>
+    <minor>0</minor>
+  </specVersion>
+  <device>
+    <deviceType>urn:schemas-futzle-com:device:CaddxNX584Partition:2</deviceType>
+    <staticJson>D_CaddxNX584Partition2.json</staticJson> 
+    <serviceList>
+      <service>
+        <serviceType>urn:schemas-micasaverde-com:service:AlarmPartition:2</serviceType>
+        <serviceId>urn:micasaverde-com:serviceId:AlarmPartition1</serviceId>
+        <controlURL>/upnp/control/AlarmPartition1</controlURL>
+        <eventSubURL>/upnp/event/AlarmPartition1</eventSubURL>
+        <SCPDURL>S_AlarmPartition2.xml</SCPDURL>
+      </service>
+    </serviceList>
+  </device>
+</root>

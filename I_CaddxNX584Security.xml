@@ -7,6 +7,10 @@
 --
 -- Luup plugin for GE/Networx/Caddx NX-584/NX-8E security system interface.
 --
+-- Version 0.2 2011-04-27 by Deborah Pickett
+-- * Panic modes (medical, fire, police)
+-- * Uses Partition API 2
+--
 -- Version 0.1 2010-08-07 by Deborah Pickett
 -- * Probes interface for valid partitions
 -- * Sets interface clock
@@ -154,7 +158,7 @@ function caddxInitialize(deviceId)
 		end
 	end
 
-	-- To do: Start enumerating child devices.
+	-- Start enumerating child devices.
 	local childDevices = luup.chdev.start(deviceId)
 
 	-- Get information about each partition.
@@ -428,7 +432,6 @@ end
 -- getZoneName(z)
 -- The plugin would like to know the name of a given zone
 -- (z, integer) in a Zone Name message (0x03).
--- This isn't implemented on the NX-4 so I haven't been able to test it.
 function getZoneName(deviceId, z)
 	if (LOG_DEBUG) then luup.log("Sending message and waiting for response: 0x23 Zone Name Request") end
 	local zoneExpected = false
@@ -491,7 +494,7 @@ function setUpPartition(deviceId, childDevices, p)
 					luup.chdev.append(
 						deviceId, childDevices,
 						"Partition-" .. p, PARTITION_STATUS[p]["name"],
-						"urn:schemas-micasaverde-com:device:AlarmPartition:1", "D_AlarmPartition1.xml",
+						"urn:schemas-futzle-com:device:CaddxNX584Partition:2", "D_CaddxNX584Partition2.xml",
 						"", "", true
 					)
 					processPartitionStatusMessage(message)
@@ -649,37 +652,37 @@ function updatePartitionDevice(deviceId, partition)
 		local partitionDevice = findChild(deviceId, "Partition-" .. partition)
 		if (partitionDevice == nil) then return end
 
-		local armed = PARTITION_STATUS[partition]["isArmed"] and not PARTITION_STATUS[partition]["isPartial"] and "1" or "0"
-		if (LOG_DEBUG) then luup.log("Armed: " .. armed) end
-		if (luup.variable_get(ALARM_PARTITION_SERVICEID, "Armed", partitionDevice) ~= armed) then
-			luup.variable_set(ALARM_PARTITION_SERVICEID, "Armed", armed, partitionDevice)
-		end
+		-- Simple armed state (armed or not).
+		local armed = PARTITION_STATUS[partition]["isArmed"] and "Armed" or "Disarmed"
+		if (LOG_DEBUG) then luup.log("ArMode: " .. armed) end
+		luup.variable_set(ALARM_PARTITION_SERVICEID, "ArmMode", armed, partitionDevice)
 
-		local stay = PARTITION_STATUS[partition]["isPartial"] and PARTITION_STATUS[partition]["isArmed"] and "1" or "0"
-		if (LOG_DEBUG) then luup.log("StayArmed: " .. stay) end
-		if (luup.variable_get(ALARM_PARTITION_SERVICEID, "StayArmed", partitionDevice) ~= stay) then
-			luup.variable_set(ALARM_PARTITION_SERVICEID, "StayArmed", stay, partitionDevice)
-		end
+		-- Detailed armed state.
+		-- Listed in increasing order of importance.
+		local detailArmed = "Disarmed"
+		detailArmed = PARTITION_STATUS[partition]["isReady"] and "Ready" or detailArmed
+		detailArmed = PARTITION_STATUS[partition]["isArmed"] and "Armed" or detailArmed
+		detailArmed = PARTITION_STATUS[partition]["isPartial"] and "Stay" or detailArmed
+		if (LOG_DEBUG) then luup.log("DetailedArmMode: " .. detailArmed) end
+		luup.variable_set(ALARM_PARTITION_SERVICEID, "DetailedArmMode", detailArmed, partitionDevice)
 
-		local disarmed = not PARTITION_STATUS[partition]["isArmed"] and not PARTITION_STATUS[partition]["isPartial"] and "1" or "0"
-		if (LOG_DEBUG) then luup.log("Disarmed: " .. disarmed) end
-		if (luup.variable_get(ALARM_PARTITION_SERVICEID, "Disarmed", partitionDevice) ~= disarmed) then
-			luup.variable_set(ALARM_PARTITION_SERVICEID, "Disarmed", disarmed, partitionDevice)
-		end
+		local breached = PARTITION_STATUS[partition]["isSiren"] and "Active" or "None"
+		if (LOG_DEBUG) then luup.log("Alarm: " .. breached) end
+		luup.variable_set(ALARM_PARTITION_SERVICEID, "Alarm", breached, partitionDevice)
 
-		local breached = (PARTITION_STATUS[partition]["isSiren"] or PARTITION_STATUS[partition]["wasSiren"]) and "1" or "0"
-		if (LOG_DEBUG) then luup.log("Breached: " .. breached) end
-		if (luup.variable_get(ALARM_PARTITION_SERVICEID, "Breached", partitionDevice) ~= breached) then
-			luup.variable_set(ALARM_PARTITION_SERVICEID, "Breached", breached, partitionDevice)
-		end
+		local pastAlarm = PARTITION_STATUS[partition]["wasSiren"] and "1" or "0"
+		if (LOG_DEBUG) then luup.log("AlarmMemory: " .. pastAlarm) end
+		luup.variable_set(ALARM_PARTITION_SERVICEID, "AlarmMemory", pastAlarm, partitionDevice)
 
 		-- Create a variable on the alarm interface matching the user who
 		-- last changed the partition, if there isn't already.
-		if (luup.variable_get(ALARM_SERVICEID, "User" .. PARTITION_STATUS[partition]["lastUser"], deviceId) == nil) then
-			luup.variable_set(ALARM_SERVICEID, "User" .. PARTITION_STATUS[partition]["lastUser"], "User " .. PARTITION_STATUS[partition]["lastUser"], deviceId)
+		local lastUser = luup.variable_get(ALARM_SERVICEID, "User" .. PARTITION_STATUS[partition]["lastUser"], deviceId)
+		if (lastUser == nil) then
+			lastUser = "User " .. PARTITION_STATUS[partition]["lastUser"];
+			luup.variable_set(ALARM_SERVICEID, "User" .. PARTITION_STATUS[partition]["lastUser"], lastUser, deviceId)
 		end
 		-- This is the user who last modified the partition.
-		luup.variable_set(ALARM_PARTITION_SERVICEID, "LastUser", (PARTITION_STATUS[partition]["lastUser"]), partitionDevice)
+		luup.variable_set(ALARM_PARTITION_SERVICEID, "LastUser", lastUser, partitionDevice)
 	end
 end
 
@@ -694,16 +697,12 @@ function updateZoneDevice(deviceId, zone)
 
 		local tripped = ZONE_STATUS[zone]["isFaulted"] and "1" or "0"
 		if (LOG_DEBUG) then luup.log("Tripped: " .. tripped) end
-		if (luup.variable_get(ALARM_ZONE_SERVICEID, "Tripped", zoneDevice) ~= tripped) then
-			luup.variable_set(ALARM_ZONE_SERVICEID, "Tripped", tripped, zoneDevice)
-		end
+		luup.variable_set(ALARM_ZONE_SERVICEID, "Tripped", tripped, zoneDevice)
 
 		-- Invert logic because alarm panel speaks of "is bypassed".
 		local armed = ZONE_STATUS[zone]["isBypassed"] and "0" or "1"
 		if (LOG_DEBUG) then luup.log("Armed: " .. armed) end
-		if (luup.variable_get(ALARM_ZONE_SERVICEID, "Armed", zoneDevice) ~= armed) then
-			luup.variable_set(ALARM_ZONE_SERVICEID, "Armed", armed, zoneDevice)
-		end
+		luup.variable_set(ALARM_ZONE_SERVICEID, "Armed", armed, zoneDevice)
 	end
 end
 
@@ -1198,9 +1197,9 @@ end
 		</action>
 		<action>
 			<serviceId>urn:micasaverde-com:serviceId:AlarmPartition1</serviceId>
-			<name>RequestQuickArm</name>
+			<name>RequestQuickArmMode</name>
 			<job>
-				if (LOG_DEBUG) then luup.log("Job: Partition: RequestQuickArm " .. lul_device .. " job " .. getJobId(lul_job)) end
+				if (LOG_DEBUG) then luup.log("Job: Partition: RequestQuickArmMode to " .. lul_settings.State .. " " .. lul_device .. " job " .. getJobId(lul_job)) end
 				
 				if (not CAPABILITY_SECONDARY_KEYPAD) then
 					-- Cannot quick arm; return error.
@@ -1208,12 +1207,21 @@ end
 				end
 				local partition = tonumber(string.match(luup.devices[lul_device].id, "%d+"))
 
-				if (LOG_DEBUG) then luup.log("Job: Adding job") end
 				-- Protocol doc says that command (second byte) for "Exit" mode should be message 2,
 				-- but on my system it seems that message 0 does the job.  Hmm.  Hope it isn't
 				-- different depending on what panel you've got.  That'd be crazy.
+				local command = {
+					Armed = "\002",
+					Stay = "\000"
+				}
+				local commandByte = command[lul_settings.State]
+				if (commandByte == nil) then
+					-- Command not supported.
+					return 2, nil
+				end
+				if (LOG_DEBUG) then luup.log("Job: Adding job") end
 				addPendingJob(getJobId(lul_job),
-					"\062\000" .. string.char(2 ^ (partition-1)),
+					"\062" .. commandByte .. string.char(2 ^ (partition-1)),
 					{
 						[29] = function(deviceId, message)
 							-- Nothing more to do.  The interface will
@@ -1243,9 +1251,9 @@ end
 		</action>
 		<action>
 			<serviceId>urn:micasaverde-com:serviceId:AlarmPartition1</serviceId>
-			<name>RequestArm</name>
+			<name>RequestArmMode</name>
 			<job>
-				if (LOG_DEBUG) then luup.log("Job: Partition: RequestArm " .. lul_device .. " job " .. getJobId(lul_job)) end
+				if (LOG_DEBUG) then luup.log("Job: Partition: RequestArmMode to " .. lul_settings.State .. " ".. lul_device .. " job " .. getJobId(lul_job)) end
 				
 				if (not CAPABILITY_PRIMARY_KEYPAD_WITH_PIN) then
 					-- Cannot arm; return error.
@@ -1255,55 +1263,19 @@ end
 				local pinCode = validatePin(lul_settings.PINCode)
 				if (pinCode == nil) then return 2, nil end
 
-				if (LOG_DEBUG) then luup.log("Job: Adding job") end
-				addPendingJob(getJobId(lul_job),
-					"\060" .. pinCode .. "\002" .. string.char(2 ^ (partition-1)),
-					{
-						[29] = function(deviceId, message)
-							-- Nothing more to do.  The interface will
-							-- send a snapshot with the updated info RSN,
-							-- and we'll update the partition device then.
-							JOBS[getJobId(lul_job)]["complete"] = 4
-							return 0
-						end,
-						[31] = function(deviceId, message)
-							JOBS[getJobId(lul_job)]["complete"] = 2
-							return 0
-						end,
-					}
-				)
-				if (LOG_DEBUG) then luup.log("Job: Processing send queue") end
-				processSendQueue()
-				if (LOG_DEBUG) then luup.log("Job: Done") end
-				-- Either the timeout or incoming task will be called next.
-				return 5, 10
-			</job>
-			<incoming>
-				checkJobComplete(lul_job)
-			</incoming>
-			<timeout>
-				checkJobComplete(lul_job)
-			</timeout>
-		</action>
-		<action>
-			<serviceId>urn:micasaverde-com:serviceId:AlarmPartition1</serviceId>
-			<name>RequestQuickStay</name>
-			<job>
-				if (LOG_DEBUG) then luup.log("Job: Partition: RequestQuickStay " .. lul_device .. " job " .. getJobId(lul_job)) end
-				
-				if (not CAPABILITY_SECONDARY_KEYPAD) then
-					-- Cannot quick stay; return error.
+				local command = {
+					Armed = "\002",
+					Stay = "\003",
+					Disarmed = "\001"
+				}
+				local commandByte = command[lul_settings.State]
+				if (commandByte == nil) then
+					-- Command not supported.
 					return 2, nil
 				end
-				local partition = tonumber(string.match(luup.devices[lul_device].id, "%d+"))
-
 				if (LOG_DEBUG) then luup.log("Job: Adding job") end
-				-- Help! The communication protocol doesn't seem to match reality on my panel.
-				-- Command (byte 2) of 0 should enter Stay mode, but it enters Armed mode.
-				-- I don't really want to try other values, because some of them are the
-				-- panic button.  Volunteers welcome!
 				addPendingJob(getJobId(lul_job),
-					"\062\000" .. string.char(2 ^ (partition-1)),
+					"\060" .. pinCode .. commandByte .. string.char(2 ^ (partition-1)),
 					{
 						[29] = function(deviceId, message)
 							-- Nothing more to do.  The interface will
@@ -1333,97 +1305,9 @@ end
 		</action>
 		<action>
 			<serviceId>urn:micasaverde-com:serviceId:AlarmPartition1</serviceId>
-			<name>RequestStay</name>
+			<name>RequestPanicMode</name>
 			<job>
-				if (LOG_DEBUG) then luup.log("Job: Partition: RequestStay " .. lul_device .. " job " .. getJobId(lul_job)) end
-				
-				if (not CAPABILITY_PRIMARY_KEYPAD_WITH_PIN) then
-					-- Cannot stay; return error.
-					return 2, nil
-				end
-				local partition = tonumber(string.match(luup.devices[lul_device].id, "%d+"))
-				local pinCode = validatePin(lul_settings.PINCode)
-				if (pinCode == nil) then return 2, nil end
-
-				if (LOG_DEBUG) then luup.log("Job: Adding job") end
-				addPendingJob(getJobId(lul_job),
-					"\060" .. pinCode .. "\003" .. string.char(2 ^ (partition-1)),
-					{
-						[29] = function(deviceId, message)
-							-- Nothing more to do.  The interface will
-							-- send a snapshot with the updated info RSN,
-							-- and we'll update the partition device then.
-							JOBS[getJobId(lul_job)]["complete"] = 4
-							return 0
-						end,
-						[31] = function(deviceId, message)
-							JOBS[getJobId(lul_job)]["complete"] = 2
-							return 0
-						end,
-					}
-				)
-				if (LOG_DEBUG) then luup.log("Job: Processing send queue") end
-				processSendQueue()
-				if (LOG_DEBUG) then luup.log("Job: Done") end
-				-- Either the timeout or incoming task will be called next.
-				return 5, 10
-			</job>
-			<incoming>
-				checkJobComplete(lul_job)
-			</incoming>
-			<timeout>
-				checkJobComplete(lul_job)
-			</timeout>
-		</action>
-		<action>
-			<serviceId>urn:micasaverde-com:serviceId:AlarmPartition1</serviceId>
-			<name>RequestDisarm</name>
-			<job>
-				if (LOG_DEBUG) then luup.log("Job: Partition: RequestDisarm " .. lul_device .. " job " .. getJobId(lul_job)) end
-				
-				if (not CAPABILITY_PRIMARY_KEYPAD_WITH_PIN) then
-					-- Cannot disarm; return error.
-					return 2, nil
-				end
-				local partition = tonumber(string.match(luup.devices[lul_device].id, "%d+"))
-				local pinCode = validatePin(lul_settings.PINCode)
-				if (pinCode == nil) then return 2, nil end
-
-				if (LOG_DEBUG) then luup.log("Job: Adding job") end
-				addPendingJob(getJobId(lul_job),
-					"\060" .. pinCode .. "\001" .. string.char(2 ^ (partition-1)),
-					{
-						[29] = function(deviceId, message)
-							-- Nothing more to do.  The interface will
-							-- send a snapshot with the updated info RSN,
-							-- and we'll update the partition device then.
-							JOBS[getJobId(lul_job)]["complete"] = 4
-							return 0
-						end,
-						[31] = function(deviceId, message)
-							JOBS[getJobId(lul_job)]["complete"] = 2
-							return 0
-						end,
-					}
-				)
-				if (LOG_DEBUG) then luup.log("Job: Processing send queue") end
-				processSendQueue()
-				if (LOG_DEBUG) then luup.log("Job: Done") end
-				-- Either the timeout or incoming task will be called next.
-				return 5, 10
-			</job>
-			<incoming>
-				checkJobComplete(lul_job)
-			</incoming>
-			<timeout>
-				checkJobComplete(lul_job)
-			</timeout>
-		</action>
-		<action>
-			<serviceId>urn:micasaverde-com:serviceId:AlarmPartition1</serviceId>
-			<name>RequestMedicalPanic</name>
-			<job>
-				if (LOG_DEBUG) then luup.log("Job: Partition: RequestMedicalPanic " .. lul_device .. " job " .. getJobId(lul_job)) end
+				if (LOG_DEBUG) then luup.log("Job: Partition: RequestMedicalPanic to " .. lul_settings.State .. " " .. lul_device .. " job " .. getJobId(lul_job)) end
 				
 				if (luup.variable_get(ALARM_SERVICEID, "EnablePanic", lul_device) ~= "1") then
 					-- Panic disabled; return error.
@@ -1435,101 +1319,19 @@ end
 				end
 				local partition = tonumber(string.match(luup.devices[lul_device].id, "%d+"))
 
+				local command = {
+					Medical = "\005",
+					Fire = "\004",
+					Police = "\006"
+				}
+				local commandByte = command[lul_settings.State]
+				if (commandByte == nil) then
+					-- Command not supported.
+					return 2, nil
+				end
 				if (LOG_DEBUG) then luup.log("Job: Adding job") end
 				addPendingJob(getJobId(lul_job),
-					"\062\005" .. string.char(2 ^ (partition-1)),
-					{
-						[29] = function(deviceId, message)
-							-- Nothing more to do.  The interface will
-							-- send a snapshot with the updated info RSN,
-							-- and we'll update the partition device then.
-							JOBS[getJobId(lul_job)]["complete"] = 4
-							return 0
-						end,
-						[31] = function(deviceId, message)
-							JOBS[getJobId(lul_job)]["complete"] = 2
-							return 0
-						end,
-					}
-				)
-				if (LOG_DEBUG) then luup.log("Job: Processing send queue") end
-				processSendQueue()
-				if (LOG_DEBUG) then luup.log("Job: Done") end
-				-- Either the timeout or incoming task will be called next.
-				return 5, 10
-			</job>
-			<incoming>
-				checkJobComplete(lul_job)
-			</incoming>
-			<timeout>
-				checkJobComplete(lul_job)
-			</timeout>
-		</action>
-		<action>
-			<serviceId>urn:micasaverde-com:serviceId:AlarmPartition1</serviceId>
-			<name>RequestFirePanic</name>
-			<job>
-				if (LOG_DEBUG) then luup.log("Job: Partition: RequestFirePanic " .. lul_device .. " job " .. getJobId(lul_job)) end
-				
-				if (luup.variable_get(ALARM_SERVICEID, "EnablePanic", lul_device) ~= "1") then
-					-- Panic disabled; return error.
-					return 2, nil
-				end
-				if (not CAPABILITY_SECONDARY_KEYPAD) then
-					-- Cannot send panic; return error.
-					return 2, nil
-				end
-				local partition = tonumber(string.match(luup.devices[lul_device].id, "%d+"))
-
-				if (LOG_DEBUG) then luup.log("Job: Adding job") end
-				addPendingJob(getJobId(lul_job),
-					"\062\004" .. string.char(2 ^ (partition-1)),
-					{
-						[29] = function(deviceId, message)
-							-- Nothing more to do.  The interface will
-							-- send a snapshot with the updated info RSN,
-							-- and we'll update the partition device then.
-							JOBS[getJobId(lul_job)]["complete"] = 4
-							return 0
-						end,
-						[31] = function(deviceId, message)
-							JOBS[getJobId(lul_job)]["complete"] = 2
-							return 0
-						end,
-					}
-				)
-				if (LOG_DEBUG) then luup.log("Job: Processing send queue") end
-				processSendQueue()
-				if (LOG_DEBUG) then luup.log("Job: Done") end
-				-- Either the timeout or incoming task will be called next.
-				return 5, 10
-			</job>
-			<incoming>
-				checkJobComplete(lul_job)
-			</incoming>
-			<timeout>
-				checkJobComplete(lul_job)
-			</timeout>
-		</action>
-		<action>
-			<serviceId>urn:micasaverde-com:serviceId:AlarmPartition1</serviceId>
-			<name>RequestPolicePanic</name>
-			<job>
-				if (LOG_DEBUG) then luup.log("Job: Partition: RequestPolicePanic " .. lul_device .. " job " .. getJobId(lul_job)) end
-				
-				if (luup.variable_get(ALARM_SERVICEID, "EnablePanic", lul_device) ~= "1") then
-					-- Panic disabled; return error.
-					return 2, nil
-				end
-				if (not CAPABILITY_SECONDARY_KEYPAD) then
-					-- Cannot send panic; return error.
-					return 2, nil
-				end
-				local partition = tonumber(string.match(luup.devices[lul_device].id, "%d+"))
-
-				if (LOG_DEBUG) then luup.log("Job: Adding job") end
-				addPendingJob(getJobId(lul_job),
-					"\062\006" .. string.char(2 ^ (partition-1)),
+					"\062" .. commandByte .. string.char(2 ^ (partition-1)),
 					{
 						[29] = function(deviceId, message)
 							-- Nothing more to do.  The interface will

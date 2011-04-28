@@ -1,0 +1,754 @@
+{
+    "flashicon": "icons\/Door_Lock.swf",
+    "imgIconBody": "",
+    "imgIconDimmable": "",
+    "imgIconTurnable": "",
+    "imgIconMin": "pics\/devices\/Door_UNLOCKED.png",
+    "imgIconMax": "pics\/devices\/Door_LOCKED.png",
+    "halloIconsDir": "pics\/hallo",
+    "DisplayStatus": {
+        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+        "Variable": "ArmMode",
+        "MinValue": "Disarmed",
+        "MaxValue": "Armed"
+    },
+    "doc_url": {
+        "doc_language": 1,
+        "doc_manual": 1,
+        "doc_version": 1,
+        "doc_platform": 0,
+        "doc_page": "devices" 
+    },
+    "ToggleButton": 1,
+    "Tabs": [
+        {
+            "Label": {
+                "lang_tag": "tabname_control",
+                "text": "Alarm Partition"
+            },
+            "Position": "0",
+            "TabType": "flash",
+            "ControlGroup": [
+                {
+                    "id": "1"
+                },
+                {
+                    "id": "2"
+                }
+            ],
+            "Control": [
+                {
+                    "ControlGroup": "1",
+                    "ControlHeader": "1",
+                    "ControlType": "label",
+                    "Label": {
+                        "lang_tag": "device_settings_page",
+                        "text": "Status"
+                    },
+                    "Display": {
+                        "Top": 0,
+                        "Left": 50,
+                        "Width": 200,
+                        "Height": 20
+                    }
+                },
+                {
+                    "ControlGroup": "1",
+                    "ControlHeader": "1",
+                    "ControlType": "variable",
+                    "Display": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Variable": "DetailedArmMode",
+                        "Top": 20,
+                        "Left": 50,
+                        "Width": 200,
+                        "Height": 20
+                    }
+                },
+                {
+                    "ControlType": "label",
+                    "Label": {
+                        "lang_tag": "device_settings_page",
+                        "text": "One Touch Options"
+                    },
+                    "Display": {
+                        "Top": 60,
+                        "Left": 50,
+                        "Width": 200,
+                        "Height": 20
+                    }
+                },
+                {
+                    "ControlGroup": "1",
+                    "ControlType": "button",
+                    "Label": {
+                        "lang_tag": "cmd_lock",
+                        "text": "Arm"
+                    },
+                    "Display": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Variable": "ArmMode",
+                        "Value": "Armed",
+                        "Top": 80,
+                        "Left": 50,
+                        "Width": 75,
+                        "Height": 20
+                    },
+                    "Command": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Action": "RequestQuickArmMode",
+                        "Parameters": [
+                            {
+                                "Name": "State",
+                                "Value": "Armed"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "ControlGroup": "1",
+                    "ControlType": "button",
+                    "Label": {
+                        "lang_tag": "cmd_lock",
+                        "text": "Force"
+                    },
+                    "Display": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Variable": "DetailedArmMode",
+                        "Value": "Force",
+                        "Top": 100,
+                        "Left": 50,
+                        "Width": 75,
+                        "Height": 20
+                    },
+                    "Command": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Action": "RequestQuickArmMode",
+                        "Parameters": [
+                            {
+                                "Name": "State",
+                                "Value": "ArmedInstant"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "ControlGroup": "1",
+                    "ControlType": "button",
+                    "Label": {
+                        "lang_tag": "cmd_lock",
+                        "text": "Stay"
+                    },
+                    "Display": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Variable": "DetailedArmMode",
+                        "Value": "Stay",
+                        "Top": 80,
+                        "Left": 135,
+                        "Width": 75,
+                        "Height": 20
+                    },
+                    "Command": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Action": "RequestQuickArmMode",
+                        "Parameters": [
+                            {
+                                "Name": "State",
+                                "Value": "Stay"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "ControlGroup": "1",
+                    "ControlType": "button",
+                    "Label": {
+                        "lang_tag": "cmd_lock",
+                        "text": "iStay"
+                    },
+                    "Display": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Variable": "DetailedArmMode",
+                        "Value": "StayInstant",
+                        "Top": 100,
+                        "Left": 135,
+                        "Width": 75,
+                        "Height": 20
+                    },
+                    "Command": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Action": "RequestQuickArmMode",
+                        "Parameters": [
+                            {
+                                "Name": "State",
+                                "Value": "StayInstant"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "ControlGroup": "1",
+                    "ControlType": "button",
+                    "Label": {
+                        "lang_tag": "cmd_lock",
+                        "text": "Night"
+                    },
+                    "Display": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Variable": "DetailedArmMode",
+                        "Value": "Night",
+                        "Top": 80,
+                        "Left": 220,
+                        "Width": 75,
+                        "Height": 20
+                    },
+                    "Command": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Action": "RequestQuickArmMode",
+                        "Parameters": [
+                            {
+                                "Name": "State",
+                                "Value": "Night"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "ControlGroup": "1",
+                    "ControlType": "button",
+                    "Label": {
+                        "lang_tag": "cmd_lock",
+                        "text": "iNight"
+                    },
+                    "Display": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Variable": "DetailedArmMode",
+                        "Value": "NightInstant",
+                        "Top": 100,
+                        "Left": 220,
+                        "Width": 75,
+                        "Height": 20
+                    },
+                    "Command": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Action": "RequestQuickArmMode",
+                        "Parameters": [
+                            {
+                                "Name": "State",
+                                "Value": "NightInstant"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "ControlGroup": "2",
+                    "ControlHeader": "1",
+                    "ControlType": "label",
+                    "Label": {
+                        "lang_tag": "device_settings_page",
+                        "text": "PIN Options"
+                    },
+                    "Display": {
+                        "Top": 140,
+                        "Left": 50,
+                        "Width": 200,
+                        "Height": 20
+                    }
+                },
+                {
+                    "ControlGroup": "2",
+                    "ControlPair": "1",
+                    "ControlType": "input",
+                    "ID": "PINCode",
+                    "Display": {
+                        "Top": 160,
+                        "Left": 50,
+                        "Width": 100,
+                        "Height": 20
+                    }
+                },
+                {
+                    "ControlGroup": "2",
+                    "ControlPair": "1",
+                    "ControlType": "button",
+                    "Label": {
+                        "lang_tag": "cmd_set",
+                        "text": "Arm"
+                    },
+                    "Display": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Variable": "ArmMode",
+                        "Value": "Armed",
+                        "Top": 160,
+                        "Left": 160,
+                        "Width": 50,
+                        "Height": 20
+                    },
+                    "Command": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Action": "RequestArmMode",
+                        "Parameters": [
+                            {
+                                "Name": "State",
+                                "Value": "Armed"
+                            },
+                            {
+                                "Name": "PINCode",
+                                "ID": "PINCode"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "ControlGroup": "2",
+                    "ControlPair": "1",
+                    "ControlType": "button",
+                    "Label": {
+                        "lang_tag": "cmd_set",
+                        "text": "Stay"
+                    },
+                    "Display": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Variable": "DetailedArmMode",
+                        "Value": "Stay",
+                        "Top": 180,
+                        "Left": 160,
+                        "Width": 50,
+                        "Height": 20
+                    },
+                    "Command": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Action": "RequestArmMode",
+                        "Parameters": [
+                            {
+                                "Name": "State",
+                                "Value": "Stay"
+                            },
+                            {
+                                "Name": "PINCode",
+                                "ID": "PINCode"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "ControlGroup": "2",
+                    "ControlPair": "1",
+                    "ControlType": "button",
+                    "Label": {
+                        "lang_tag": "cmd_set",
+                        "text": "Disarm"
+                    },
+                    "Display": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Variable": "ArmMode",
+                        "Value": "Disarmed",
+                        "Top": 200,
+                        "Left": 160,
+                        "Width": 50,
+                        "Height": 20
+                    },
+                    "Command": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Action": "RequestArmMode",
+                        "Parameters": [
+                            {
+                                "Name": "State",
+                                "Value": "Disarmed"
+                            },
+                            {
+                                "Name": "PINCode",
+                                "ID": "PINCode"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "ControlType": "label",
+                    "Label": {
+                        "lang_tag": "device_settings_page",
+                        "text": "Panic Alarm Options"
+                    },
+                    "Display": {
+                        "Top": 240,
+                        "Left": 50,
+                        "Width": 200,
+                        "Height": 20
+                    }
+                },
+                {
+                    "ControlType": "button",
+                    "Label": {
+                        "lang_tag": "cmd_set",
+                        "text": "Police"
+                    },
+                    "Display": {
+                        "Top": 260,
+                        "Left": 50,
+                        "Width": 75,
+                        "Height": 20
+                    },
+                    "Command": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Action": "RequestPanicMode",
+                        "Parameters": [
+                            {
+                                "Name": "State",
+                                "Value": "Police"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "ControlType": "button",
+                    "Label": {
+                        "lang_tag": "cmd_set",
+                        "text": "Medical"
+                    },
+                    "Display": {
+                        "Top": 260,
+                        "Left": 135,
+                        "Width": 75,
+                        "Height": 20
+                    },
+                    "Command": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Action": "RequestPanicMode",
+                        "Parameters": [
+                            {
+                                "Name": "State",
+                                "Value": "Medical"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "ControlType": "button",
+                    "Label": {
+                        "lang_tag": "cmd_set",
+                        "text": "Fire"
+                    },
+                    "Display": {
+                        "Top": 260,
+                        "Left": 220,
+                        "Width": 75,
+                        "Height": 20
+                    },
+                    "Command": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Action": "RequestPanicMode",
+                        "Parameters": [
+                            {
+                                "Name": "State",
+                                "Value": "Fire"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "ControlType": "label",
+                    "Label": {
+                        "lang_tag": "device_settings_page",
+                        "text": "Vendor Options"
+                    },
+                    "Display": {
+                        "Top": 300,
+                        "Left": 50,
+                        "Width": 200,
+                        "Height": 20
+                    }
+                },
+                {
+                    "ControlType": "variable",
+                    "Display": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Variable": "VendorStatus",
+                        "Top": 320,
+                        "Left": 50,
+                        "Width": 200,
+                        "Height": 20
+                    }
+                },
+                {
+                    "ControlType": "variable",
+                    "Display": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Variable": "VendorStatusCode",
+                        "Top": 340,
+                        "Left": 50,
+                        "Width": 200,
+                        "Height": 20
+                    }
+                },
+                {
+                    "ControlType": "variable",
+                    "Display": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Variable": "VendorStatusData",
+                        "Top": 360,
+                        "Left": 50,
+                        "Width": 200,
+                        "Height": 20
+                    }
+                }
+            ]
+        },
+        {
+            "Label": {
+                "lang_tag": "notifications",
+                "text": "Notifications"
+            },
+            "Position": "2",
+            "TabType": "javascript",
+            "ScriptName": "shared.js",
+            "Function": "device_notifications"
+        },
+        {
+            "Label": {
+                "lang_tag": "logs",
+                "text": "Logs"
+            },
+            "Position": "3",
+            "TabType": "javascript",
+            "ScriptName": "shared.js",
+            "Function": "device_logs"
+        },
+        {
+            "Label": {
+                "lang_tag": "advanced",
+                "text": "Advanced"
+            },
+            "Position": "4",
+            "TabType": "javascript",
+            "ScriptName": "shared.js",
+            "Function": "advanced_device"
+        }
+    ],
+    "DeviceType": "urn:schemas-futzle-com:device:CaddxNX584Partition:2",
+    "eventList": {
+        "event_1": {
+            "label": "Armed state",
+            "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+            "argumentList" : {
+                "argument_1" : {
+                    "dataType": "string",
+                    "defaultValue": "Armed",
+                    "allowedValueList" : {
+                        "Yes" : "Armed",
+                        "No" : "Disarmed"
+                    },
+                    "name": "ArmMode",
+                    "comparisson": "=",
+                    "prefix": "Is Armed?",
+                    "suffix": ""
+                }
+            }
+        },
+        "event_2": {
+            "label": "Armed detailed state",
+            "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+            "argumentList" : {
+                "argument_1" : {
+                    "dataType": "string",
+                    "defaultValue": "Armed",
+                    "allowedValueList" : {
+                        "Disarmed" : "Disarmed",
+                        "Armed" : "Armed",
+                        "Stay" : "Stay",
+                        "StayInstant" : "StayInstant",
+                        "Night" : "Night",
+                        "NightInstant" : "NightInstant",
+                        "Force" : "Force",
+                        "Ready" : "Ready",
+                        "Vacation" : "Vacation",
+                        "NotReady" : "NotReady",
+                        "FailedToArm" : "FailedToArm",
+                        "EntryDelay" : "EntryDelay",
+                        "ExitDelay" : "ExitDelay"
+                    },
+                    "name": "DetailedArmMode",
+                    "comparisson": "=",
+                    "prefix": "Armed state",
+                    "suffix": ""
+                }
+            }
+        },
+        "event_3": {
+            "label": "Alarm Active",
+            "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+            "argumentList" : {
+                "argument_1" : {
+                    "dataType": "string",
+                    "defaultValue": "Active",
+                    "allowedValueList" : {
+                        "Active" : "Active",
+                        "NotActive" : "None"
+                    },
+                    "name": "Alarm",
+                    "comparisson": "=",
+                    "prefix": "Is Active?",
+                    "suffix": ""
+                }
+            }
+        },
+        "event_4": {
+            "label": "A PIN Code is entered",
+            "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+            "argumentList" : {
+                "argument_1" : {
+                    "dataType": "string",
+                    "defaultValue": "",
+                    "name": "LastUser",
+                    "comparisson": "=",
+                    "prefix": "User",
+                    "suffix": ""
+                }
+            }
+        },
+        "event_5": {
+            "label": "Vendor Status Code",
+            "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+            "argumentList" : {
+                "argument_1" : {
+                    "dataType": "string",
+                    "defaultValue": "",
+                    "name": "VendorStatusCode",
+                    "comparisson": "=",
+                    "prefix": "Code",
+                    "suffix": ""
+                }
+            }
+        }
+    },
+    "sceneList": {
+        "group_1": {
+            "cmd_1": {
+                "label": "Set Partition ... (PIN)",
+                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                "action": "RequestArmMode",
+                "argumentList": {
+                    "argument_1": {
+                        "dataType": "string",
+                        "defaultValue": "Disarmed",
+                        "allowedValueList": {
+                            "Disarmed" : "Disarmed",
+                            "Armed" : "Armed",
+                            "Stay" : "Stay",
+                            "StayInstant" : "StayInstant",
+                            "Night" : "Night",
+                            "NightInstant" : "NightInstant",
+                            "Force" : "Force",
+                            "Vacation" : "Vacation"
+                        },
+                        "name": "State",
+                        "prefix": "State",
+                        "suffix": ""
+                    },
+                    "argument_2": {
+                        "dataType": "ui4",
+                        "defaultValue": "1234",
+                        "allowedValueRange": {
+                            "minimum": "0",
+                            "maximum": "99999999"
+                        },
+                        "prefix" : "PIN",
+                        "suffix" : "0-99999999, (insecure)",
+                        "name": "PINCode"
+                    }
+                }
+            }
+        },
+        "group_2": {
+            "cmd_1": {
+                "label": "Set Partition Disarmed (No PIN)",
+                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                "action": "RequestQuickArmMode",
+                "arguments": {
+                    "State": "Disarmed"
+                }
+            },
+            "cmd_2": {
+                "label": "Set Partition Armed (No PIN)",
+                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                "action": "RequestQuickArmMode",
+                "arguments": {
+                    "State": "Armed"
+                }
+            },
+            "cmd_3": {
+                "label": "Set Partition Stay (No PIN)",
+                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                "action": "RequestQuickArmMode",
+                "arguments": {
+                    "State": "Stay"
+                }
+            },
+            "cmd_4": {
+                "label": "Set Partition StayInstant (No PIN)",
+                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                "action": "RequestQuickArmMode",
+                "arguments": {
+                    "State": "StayInstant"
+                }
+            },
+            "cmd_5": {
+                "label": "Set Partition Night (No PIN)",
+                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                "action": "RequestQuickArmMode",
+                "arguments": {
+                    "State": "Night"
+                }
+            },
+            "cmd_6": {
+                "label": "Set Partition NightInstant (No PIN)",
+                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                "action": "RequestQuickArmMode",
+                "arguments": {
+                    "State": "NightInstant"
+                }
+            },
+            "cmd_7": {
+                "label": "Set Partition Force (No PIN)",
+                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                "action": "RequestQuickArmMode",
+                "arguments": {
+                    "State": "Force"
+                }
+            },
+            "cmd_8": {
+                "label": "Set Partition Vacation (No PIN)",
+                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                "action": "RequestQuickArmMode",
+                "arguments": {
+                    "State": "Vacation"
+                }
+            }
+        },
+        "group_3": {
+            "cmd_1": {
+                "label": "Request Medical Panic",
+                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                "action": "RequestPanicMode",
+                "arguments": {
+                    "State": "Medical"
+                }
+            },
+            "cmd_2": {
+                "label": "Request Police Panic",
+                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                "action": "RequestPanicMode",
+                "arguments": {
+                    "State": "Police"
+                }
+            },
+            "cmd_3": {
+                "label": "Request Fire Panic",
+                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                "action": "RequestPanicMode",
+                "arguments": {
+                    "State": "Fire"
+                }
+            }
+        }
+    }
+}
