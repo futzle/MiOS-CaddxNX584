@@ -593,6 +593,10 @@ function processPartitionStatusMessage(message)
 	PARTITION_STATUS[partition]["isSiren"] = bitMask(string.byte(string.sub(message,3)), 2)
 	PARTITION_STATUS[partition]["wasSiren"] = bitMask(string.byte(string.sub(message,3)), 1)
 	PARTITION_STATUS[partition]["isReady"] = bitMask(string.byte(string.sub(message,7)), 4)
+	PARTITION_STATUS[partition]["isChime"] = bitMask(string.byte(string.sub(message,4)), 8)
+	PARTITION_STATUS[partition]["isExitDelay"] = bitMask(string.byte(string.sub(message,4)), 192)
+	PARTITION_STATUS[partition]["isEntryDelay"] = bitMask(string.byte(string.sub(message,4)), 16) or
+		bitMask(string.byte(string.sub(message,8)), 1)
 	PARTITION_STATUS[partition]["lastUser"] = string.byte(string.sub(message,6))
 	return partition
 end
@@ -605,6 +609,10 @@ function processPartitionsSnapshotMessage(message)
 			PARTITION_STATUS[partition]["isArmed"] = bitMask(string.byte(string.sub(message,partition+1)), 4)
 			PARTITION_STATUS[partition]["isPartial"] = bitMask(string.byte(string.sub(message,partition+1)), 8)
 			PARTITION_STATUS[partition]["isReady"] = bitMask(string.byte(string.sub(message,partition+1)), 2)
+			PARTITION_STATUS[partition]["isChime"] = bitMask(string.byte(string.sub(message,partition+1)), 16)
+			PARTITION_STATUS[partition]["isExitDelay"] = bitMask(string.byte(string.sub(message,partition+1)), 64)
+			PARTITION_STATUS[partition]["isEntryDelay"] = bitMask(string.byte(string.sub(message,partition+1)), 32)
+			PARTITION_STATUS[partition]["wasSiren"] = bitMask(string.byte(string.sub(message,partition+1)), 128)
 		end
 	end
 end
@@ -663,16 +671,25 @@ function updatePartitionDevice(deviceId, partition)
 		detailArmed = PARTITION_STATUS[partition]["isReady"] and "Ready" or detailArmed
 		detailArmed = PARTITION_STATUS[partition]["isArmed"] and "Armed" or detailArmed
 		detailArmed = PARTITION_STATUS[partition]["isPartial"] and "Stay" or detailArmed
+		detailArmed = PARTITION_STATUS[partition]["isExitDelay"] and "ExitDelay" or detailArmed
+		detailArmed = PARTITION_STATUS[partition]["isEntryDelay"] and "EntryDelay" or detailArmed
 		if (LOG_DEBUG) then luup.log("DetailedArmMode: " .. detailArmed) end
 		luup.variable_set(ALARM_PARTITION_SERVICEID, "DetailedArmMode", detailArmed, partitionDevice)
 
+		-- Current alarm.
 		local breached = PARTITION_STATUS[partition]["isSiren"] and "Active" or "None"
 		if (LOG_DEBUG) then luup.log("Alarm: " .. breached) end
 		luup.variable_set(ALARM_PARTITION_SERVICEID, "Alarm", breached, partitionDevice)
 
+		-- Past alarm (which has since cleared).
 		local pastAlarm = PARTITION_STATUS[partition]["wasSiren"] and "1" or "0"
 		if (LOG_DEBUG) then luup.log("AlarmMemory: " .. pastAlarm) end
 		luup.variable_set(ALARM_PARTITION_SERVICEID, "AlarmMemory", pastAlarm, partitionDevice)
+
+		-- Chime mode.
+		local chime = PARTITION_STATUS[partition]["isChime"] and "1" or "0"
+		if (LOG_DEBUG) then luup.log("ChimeEnabled: " .. chime) end
+		luup.variable_set(ALARM_PARTITION_SERVICEID, "ChimeEnabled", chime, partitionDevice)
 
 		-- Create a variable on the alarm interface matching the user who
 		-- last changed the partition, if there isn't already.
