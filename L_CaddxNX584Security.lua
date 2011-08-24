@@ -23,7 +23,7 @@
 
 module ("L_CaddxNX584Security", package.seeall)
 
-ALARM_SERVICEID = "urn:schemas-futzle-com:serviceId:CaddxNX584Security1"
+ALARM_SERVICEID = "urn:futzle-com:serviceId:CaddxNX584Security1"
 ALARM_PARTITION_SERVICEID = "urn:micasaverde-com:serviceId:AlarmPartition1"
 ALARM_ZONE_SERVICEID = "urn:micasaverde-com:serviceId:SecuritySensor1"
 
@@ -33,10 +33,6 @@ INCOMING_EXPECTING_TYPE = 2        -- Received length byte
 INCOMING_EXPECTING_CHECKSUM1 = 3   -- Received all bytes, now need first checksum byte
 INCOMING_EXPECTING_CHECKSUM2 = 4   -- Received first checksum byte
 INCOMING_EXPECTING_MESSAGE = 5     -- Receiving message body bytes
-
--- Interface doesn't know which zones are valid, so have to
--- provide this information manually.
-MAXIMUM_ZONE = 16 -- Highest-numbered zone in system.
 
 LOG_DEBUG = true -- Debug I/O with interface.
 MAX_RETRIES = 3 -- This many failures indicates the system has failed.
@@ -90,6 +86,9 @@ function caddxInitialize(deviceId)
 	luup.log("Initializing Caddx NX-584")
 	luup.io.intercept()
 
+	-- Remember parent device ID.
+	ROOT_DEVICE = deviceId;
+
 	-- Incoming byte state machine initialization.
 	RECEIVE_STATE = INCOMING_EXPECTING_START
 	INCOMING_ESCAPED = 0x0
@@ -97,65 +96,27 @@ function caddxInitialize(deviceId)
 	CHECKSUM2 = 0
 	LENGTH = 0
 
-	-- Get a list of zones to query.
-	-- Rationale: The Caddx protocol doesn't provide this information
-	-- so the plugin would have to guess the highest-numbered zones.
-	-- We'd probably get this wrong.  Furthermore, querying zones is
-	-- slow so it's worth letting the user provide an explicit list.
-	if (luup.variable_get(ALARM_SERVICEID, "Zones", deviceId) == nil) then
-		-- Populate an initial list using MAXIMUM_ZONE.
-		local zoneList = ""
-		for zone = 1,MAXIMUM_ZONE do
-			zoneList = zoneList .. "," .. zone
-		end
-		zoneList = string.sub(zoneList, 2) -- Skip that first comma
-		luup.variable_set(ALARM_SERVICEID, "Zones", zoneList, deviceId)
-	end
-	local zoneList = luup.variable_get(ALARM_SERVICEID, "Zones", deviceId)
-	local zones = {}
-	for zone in string.gmatch(zoneList, "%d+") do
-		zones[tonumber(zone)] = true
-	end
-
-
 	-- Ask the alarm system if it's configured to be
 	-- able to respond to the requests we'll give it.
-	if (not setUpInterface(deviceId)) then
-		luup.set_failure(true, deviceId)
+	if (not setUpInterface(ROOT_DEVICE)) then
+		luup.set_failure(true, ROOT_DEVICE)
 		return false, "Failed to set up interface", "Caddx NX-584"
 	end
 
 	-- Set the clock on the interface.
 	if (CAPABILITY_SET_CLOCK) then
-		setInterfaceClock(deviceId)
+		setInterfaceClock(ROOT_DEVICE)
 	end
 
 	-- Ask the alarm system about the global status.
 	-- Includes: faults; 4- or 6-digit PIN; list of valid partitions.
-	if (not getSystemStatus(deviceId)) then
-		luup.set_failure(true, deviceId)
+	if (not getSystemStatus(ROOT_DEVICE)) then
+		luup.set_failure(true, ROOT_DEVICE)
 		return false, "Failed to get initial status", "Caddx NX-584"
 	end
 
-	-- Get the names of all zones (even invalid ones; we will
-	-- winnow out the invalid ones later).
-	ZONE_STATUS = {}
-	for zone in pairs(zones) do
-		-- Pick a default name in case we can't get the zone's real name.
-		ZONE_STATUS[zone] = {
-			["name"] = "Zone " .. zone
-		}
-	end
-	if (CAPABILITY_ZONE_NAME) then
-		for zone in pairs(zones) do
-			-- Ask the interface for the zone name.
-			if (LOG_DEBUG) then luup.log("Getting zone name for " .. zone) end
-			repeat until getZoneName(deviceId, zone)
-		end
-	end
-
 	-- Start enumerating child devices.
-	local childDevices = luup.chdev.start(deviceId)
+	local childDevices = luup.chdev.start(ROOT_DEVICE)
 
 	-- Get information about each partition.
 	PARTITION_STATUS = {}
@@ -175,7 +136,7 @@ function caddxInitialize(deviceId)
 			if (not configured) then
 				if (LOG_DEBUG) then luup.log("Setting up partition " .. partition) end
 				done = false
-				if (setUpPartition(deviceId, childDevices, partition)) then
+				if (setUpPartition(ROOT_DEVICE, childDevices, partition)) then
 					PARTITION_CONFIGURED[partition] = true
 				end
 			end
@@ -183,41 +144,34 @@ function caddxInitialize(deviceId)
 	until done == true
 
 	-- Get information about each zone.
-	-- Includes: zone valid
-	ZONE_CONFIGURED = {}
+	ZONE_STATUS = {}
 	ZONE_VALID = {}
-	for zone in pairs(zones) do
-		ZONE_CONFIGURED[zone] = false
-	end
-	repeat
-		-- Do this until we are satisfied that we are done.
-		-- The same caveats apply to zone as they do partitions.
-		local done = true
-		for zone, configured in pairs(ZONE_CONFIGURED) do
-			if (not configured) then
-				if (LOG_DEBUG) then luup.log("Setting up zone " .. zone) end
-				done = false
-				if (setUpZone(deviceId, childDevices, zone)) then
-					ZONE_CONFIGURED[zone] = true
-				end
-			end
+	for zone = 1,48 do
+		if (setUpZone(ROOT_DEVICE, childDevices, zone)) then
+			ZONE_VALID[zone] = true
+			ZONE_STATUS[zone] = { }
 		end
-	until done == true
+	end
 
 	-- Commit child devices.
-	luup.chdev.sync(deviceId, childDevices)
+	luup.chdev.sync(ROOT_DEVICE, childDevices)
 
 	-- Set the initial states for each partition based on the
 	-- information we've collected.
 	for partition, _ in pairs(PARTITION_VALID) do
-		updatePartitionDevice(deviceId, partition)
+		updatePartitionDevice(ROOT_DEVICE, partition)
 	end
 
 	-- Set the initial states for each zone based on the
 	-- information we've collected.
 	for zone, _ in pairs(ZONE_VALID) do
-		updateZoneDevice(deviceId, zone)
+		updateZoneDevice(ROOT_DEVICE, zone)
 	end
+
+	-- Scan result callbacks.
+	ZONE_SCAN = {}
+	luup.register_handler("callbackHandler", "ZoneScan")
+	luup.register_handler("callbackHandler", "ZoneNameScan")
 
 	-- Setup is complete.  Prepare to finish initialization.
 	if (LOG_DEBUG) then luup.log("Finished initialization") end
@@ -254,7 +208,7 @@ function sendMessageAndHandleResponse(deviceId, message, handlers)
 		local a, b, c
 		repeat
 			local status
-			status, a, b, c = readByte(luup.io.read(3, deviceId))
+			status, a, b, c = readByte(luup.io.read(3, ROOT_DEVICE))
 			if (status == 2) then
 				-- Bad checksum.  Send a negative acknowledgment message.
 				sendNegativeAcknowledgeMessage()
@@ -263,7 +217,7 @@ function sendMessageAndHandleResponse(deviceId, message, handlers)
 		until (status == 4)
 		if (handlers[a] ~= nil) then
 			-- This is the message I am looking for.
-			return handleMessage(deviceId, handlers, a, b, c)
+			return handleMessage(ROOT_DEVICE, handlers, a, b, c)
 		elseif (a == "timeout") then
 			-- Timed out waiting for a response (e.g., during setup)
 			if (LOG_DEBUG) then luup.log("Timed out waiting for response, retrying") end
@@ -290,7 +244,7 @@ end
 function setUpInterface(deviceId)
 	if (LOG_DEBUG) then luup.log("Sending message and waiting for response: 0x21 Interface Configuration Request") end
 
-	return sendMessageAndHandleResponse(deviceId, "\033", 
+	return sendMessageAndHandleResponse(ROOT_DEVICE, "\033", 
 		{
 			[1] = function (deviceId, message)
 				if (LOG_DEBUG) then luup.log("Handling message: 0x01 Interface Configuration") end
@@ -363,7 +317,7 @@ end
 function setInterfaceClock(deviceId)
 	if (LOG_DEBUG) then luup.log("Sending message and waiting for response: 0x3b Set Interface Clock") end
 	local timeTable = os.date("*t")
-	return sendMessageAndHandleResponse(deviceId, string.char(0x3b + 128) .. string.format("%c%c%c%c%c%c",
+	return sendMessageAndHandleResponse(ROOT_DEVICE, string.char(0x3b + 128) .. string.format("%c%c%c%c%c%c",
 			timeTable["year"] % 100,
 			timeTable["month"],
 			timeTable["day"],
@@ -397,7 +351,7 @@ function getSystemStatus(deviceId)
 	PARTITION_VALID = {}
 
 	-- Callbacks to handle System Status request.
-	return sendMessageAndHandleResponse(deviceId, "\040", 
+	return sendMessageAndHandleResponse(ROOT_DEVICE, "\040", 
 		{
 			[8] = function (deviceId, message)
 				if (LOG_DEBUG) then luup.log("Handling message: 0x08 System Status") end
@@ -425,51 +379,6 @@ function getSystemStatus(deviceId)
 	)
 end
 
--- getZoneName(z)
--- The plugin would like to know the name of a given zone
--- (z, integer) in a Zone Name message (0x03).
-function getZoneName(deviceId, z)
-	if (LOG_DEBUG) then luup.log("Sending message and waiting for response: 0x23 Zone Name Request") end
-	local zoneExpected = false
-	sendMessageAndHandleResponse(deviceId, "\035" .. string.char(z - 1), 
-		{
-			[3] = function (deviceId, message)
-				if (LOG_DEBUG) then luup.log("Handling message: 0x03 Zone Name") end
-				-- First byte is the zone number.
-				local zoneNumber = string.byte(string.sub(message,1)) + 1
-				if (z ~= zoneNumber) then
-					-- This isn't the zone I was asking about.
-					return 0
-				end
-				-- Next 16 bytes are the zone name.  Strip trailing spaces.
-				local zoneName = string.gsub(string.sub(message,2,17), " *$", "")
-				if (zoneName == "") then
-					-- No name, so stop trying.
-					zoneExpected = true
-					return 0
-				end
-				-- Use this zone name instead of the default.
-				ZONE_STATUS[z]["name"] = zoneName
-				zoneExpected = true;
-				return 0
-			end,
-			[31] = function (deviceId, message)
-				if (LOG_DEBUG) then luup.log("Handling message: 0x1F Message Reject") end
-				-- The interface can't give me a zone name after all.
-				zoneExpected = true
-				return 0
-			end,
-			["timeout"] = function (deviceId, message)
-				if (LOG_DEBUG) then luup.log("Timeout while getting zone name") end
-				-- The interface can't give me a zone name after all.
-				zoneExpected = true
-				return 0
-			end,
-		}
-	)
-	return zoneExpected
-end
-
 -- setUpPartition(deviceId, childDevices, p)
 -- p: number, partition (1 origin)
 -- Returns true if the received reply was for the requested partition,
@@ -479,7 +388,7 @@ function setUpPartition(deviceId, childDevices, p)
 
 	local partitionConfigured = false
 
-	sendMessageAndHandleResponse(deviceId, "\038" .. string.char(p - 1),
+	sendMessageAndHandleResponse(ROOT_DEVICE, "\038" .. string.char(p - 1),
 		{
 			[6] = function (deviceId, message)
 				if (LOG_DEBUG) then luup.log("Handling message: 0x06 Partition Status") end
@@ -488,7 +397,7 @@ function setUpPartition(deviceId, childDevices, p)
 					-- Partitions aren't named, so invent a suitable name.
 					PARTITION_STATUS[p]["name"] = "Partition " .. p
 					luup.chdev.append(
-						deviceId, childDevices,
+						ROOT_DEVICE, childDevices,
 						"Partition-" .. p, PARTITION_STATUS[p]["name"],
 						"urn:schemas-futzle-com:device:CaddxNX584Partition:2", "D_CaddxNX584Partition2.xml",
 						"", "", true
@@ -518,61 +427,22 @@ end
 -- setUpZone(deviceId, childDevices, z)
 -- Get information about a zone and create a child device for it.
 -- z: Zone number (1 origin)
--- Returns true if received the configuration for the requested zone,
--- otherwise returns false (and caller should try again).
+-- Returns true if the zone is known, otherwise returns false.
 function setUpZone(deviceId, childDevices, z)
-	if (LOG_DEBUG) then luup.log("Sending message and waiting for response: 0x24 Zone Status Request") end
-	sendMessageAndHandleResponse(deviceId, "\036" .. string.char(z - 1), 
-		{
-			[4] = function (deviceId, message)
-				if (LOG_DEBUG) then luup.log("Handling message: 0x04 Zone Status") end
-				if (string.byte(string.sub(message,1)) == z - 1) then
-					-- This is the zone we were asking about.
-					-- See if the user has set variables on the parent device that say what
-					-- type of sensor this is.  Otherwise pick a default.
-					local deviceType = luup.variable_get(ALARM_SERVICEID, "ZoneDeviceType" .. z, deviceId)
-					local deviceFile = luup.variable_get(ALARM_SERVICEID, "ZoneDeviceFile" .. z, deviceId)
-					if (deviceType == nil or deviceFile == nil) then
-						deviceType = "urn:schemas-micasaverde-com:device:MotionSensor:1"
-						deviceFile = "D_MotionSensor1.xml"
-					end
-				        if (LOG_DEBUG) then luup.log(string.format("Zone %d (%s): %s %s", z, ZONE_STATUS[z]["name"], deviceFile, deviceType)) end
-					luup.chdev.append(
-						deviceId, childDevices,
-						"Zone-" .. z, ZONE_STATUS[z]["name"],
-						deviceType, deviceFile,
-						"I_CaddxNX584Security.xml", "", false
-					)
-					processZoneStatusMessage(message)
-					zoneConfigured = true
-				else
-					-- This isn't the zone I asked about, but I may know about it.
-					if (ZONE_CONFIGURED[string.byte(string.sub(message,1)) + 1]) then
-						processZoneStatusMessage(message)
-					end
-				end
-				return 0
-			end,
-			[5] = function (deviceId, message)
-				if (LOG_DEBUG) then luup.log("Handling message: 0x05 Zones Snapshot") end
-				-- Process the zones snapshot message, for the zones
-				-- which have been configured.
-				processZonesSnapshotMessage(message)
-				return 0
-			end,
-			[6] = function (deviceId, message)
-				if (LOG_DEBUG) then luup.log("Handling message: 0x06 Partition Status") end
-				processPartitionStatusMessage(message)
-				return 0
-			end,
-			[7] = function (deviceId, message)
-				if (LOG_DEBUG) then luup.log("Handling message: 0x07 Partitions Snapshot") end
-				processPartitionsSnapshotMessage(message)
-				return 0
-			end
-		}
-	)
-	return zoneConfigured
+	if (LOG_DEBUG) then luup.log("Searching for zone " .. z) end
+	local deviceFile = luup.variable_get(ALARM_SERVICEID, "Zone" .. z .. "Type", ROOT_DEVICE)
+	local deviceName = luup.variable_get(ALARM_SERVICEID, "Zone" .. z .. "Name", ROOT_DEVICE)
+	if (deviceFile ~= nil and deviceFile ~= "") then
+	        if (LOG_DEBUG) then luup.log(string.format("Zone %d (%s): %s", z, deviceName, deviceFile)) end
+		luup.chdev.append(
+			ROOT_DEVICE, childDevices,
+			"Zone-" .. z, deviceName,
+			"", deviceFile,
+			"I_CaddxNX584Security.xml", "", false
+		)
+		return true
+	end
+	return false
 end
 
 --
@@ -635,11 +505,11 @@ function processZonesSnapshotMessage(message)
 	local z16 = string.byte(string.sub(message,2)) * 16
 	for zone2 = 1,8 do
 		-- Two zones per byte.
-		if (ZONE_VALID[z16+zone2*2-1] and ZONE_CONFIGURED[z16+zone2*2-1]) then
+		if (ZONE_VALID[z16+zone2*2-1]) then
 			ZONE_STATUS[z16+zone2*2-1]["isFaulted"] = bitMask(string.byte(string.sub(message,zone2+1)), 1)
 			ZONE_STATUS[z16+zone2*2-1]["isBypassed"] = bitMask(string.byte(string.sub(message,zone2+1)), 2)
 		end
-		if (ZONE_VALID[z16+zone2*2] and ZONE_CONFIGURED[z16+zone2*2]) then
+		if (ZONE_VALID[z16+zone2*2]) then
 			ZONE_STATUS[z16+zone2*2]["isFaulted"] = bitMask(string.byte(string.sub(message,zone2+1)), 16)
 			ZONE_STATUS[z16+zone2*2]["isBypassed"] = bitMask(string.byte(string.sub(message,zone2+1)), 32)
 		end
@@ -653,15 +523,15 @@ end
 function updatePartitionDevice(deviceId, partition)
 	if (partition ~= nil) then
 		if (LOG_DEBUG) then luup.log("Setting state for partition " .. partition) end
-		local partitionDevice = findChild(deviceId, "Partition-" .. partition)
+		local partitionDevice = findChild(ROOT_DEVICE, "Partition-" .. partition)
 		if (partitionDevice == nil) then return end
 
 		-- Create a variable on the alarm interface matching the user who
 		-- last changed the partition, if there isn't already.
-		local lastUser = luup.variable_get(ALARM_SERVICEID, "User" .. PARTITION_STATUS[partition]["lastUser"], deviceId)
+		local lastUser = luup.variable_get(ALARM_SERVICEID, "User" .. PARTITION_STATUS[partition]["lastUser"], ROOT_DEVICE)
 		if (lastUser == nil) then
-			lastUser = "User " .. PARTITION_STATUS[partition]["lastUser"];
-			luup.variable_set(ALARM_SERVICEID, "User" .. PARTITION_STATUS[partition]["lastUser"], lastUser, deviceId)
+			lastUser = "User " .. PARTITION_STATUS[partition]["lastUser"]
+			luup.variable_set(ALARM_SERVICEID, "User" .. PARTITION_STATUS[partition]["lastUser"], lastUser, ROOT_DEVICE)
 		end
 		-- This is the user who last modified the partition.
 		luup.variable_set(ALARM_PARTITION_SERVICEID, "LastUser", lastUser, partitionDevice)
@@ -694,7 +564,7 @@ function updatePartitionDevice(deviceId, partition)
 
 		-- Simple armed state (armed or not).
 		local armed = PARTITION_STATUS[partition]["isArmed"] and "Armed" or "Disarmed"
-		if (LOG_DEBUG) then luup.log("ArMode: " .. armed) end
+		if (LOG_DEBUG) then luup.log("ArmMode: " .. armed) end
 		luup.variable_set(ALARM_PARTITION_SERVICEID, "ArmMode", armed, partitionDevice)
 	end
 end
@@ -705,7 +575,7 @@ end
 function updateZoneDevice(deviceId, zone)
 	if (zone ~= nil) then
 		if (LOG_DEBUG) then luup.log("Setting state for zone " .. zone) end
-		local zoneDevice = findChild(deviceId, "Zone-" .. zone)
+		local zoneDevice = findChild(ROOT_DEVICE, "Zone-" .. zone)
 		if (zoneDevice == nil) then return end
 
 		local tripped = ZONE_STATUS[zone]["isFaulted"] and "1" or "0"
@@ -729,7 +599,7 @@ end
 function handleZoneStatusMessage(deviceId, message)
 	if (LOG_DEBUG) then luup.log("Handling message: 0x04 Zone Status") end
 	local zone = processZoneStatusMessage(message)
-	updateZoneDevice(deviceId, zone)
+	updateZoneDevice(ROOT_DEVICE, zone)
 	return 0
 end
 
@@ -741,7 +611,7 @@ function handleZonesSnapshotMessage(deviceId, message)
 	local z16 = processZonesSnapshotMessage(message)
 	for zone = z16*16+1,z16*16+16 do
 		if (ZONE_VALID[zone]) then
-			updateZoneDevice(deviceId, zone)
+			updateZoneDevice(ROOT_DEVICE, zone)
 		end
 	end
 	return 0
@@ -753,7 +623,7 @@ end
 function handlePartitionStatusMessage(deviceId, message)
 	if (LOG_DEBUG) then luup.log("Handling message: 0x06 Partition Status") end
 	local partition = processPartitionStatusMessage(message)
-	updatePartitionDevice(deviceId, partition)
+	updatePartitionDevice(ROOT_DEVICE, partition)
 	return 0
 end
 
@@ -765,7 +635,7 @@ function handlePartitionsSnapshotMessage(deviceId, message)
 	processPartitionsSnapshotMessage(message)
 	for parition = 1,8 do
 		if (PARTITION_VALID[partition]) then
-			updatePartitionDevice(deviceId, partition)
+			updatePartitionDevice(ROOT_DEVICE, partition)
 		end
 	end
 	return 0
@@ -930,7 +800,7 @@ end
 -- readByte(lul_data)
 -- Given the next byte of input (lul_data),
 -- return the next message encoded in the input.
--- Return values:
+-- Return values (inspired by the Luup job status codes, but not related):
 -- - Message complete: 4, messageId, messageBody, acknowledgeRequired
 -- - Message not yet complete: 5
 -- - Bad checksum: 2, expectedChecksum, receivedChecksum
@@ -1025,15 +895,19 @@ function readByte(lul_data)
 	end
 end
 
--- handleReadByteResult(state, a, b, c)
+-- handleReadByteResult(lul_job, state, a, b, c)
 -- We've just read a byte from the alarm system.
 -- - If the message is complete and the checksum is correct, handle it.
 -- - If there was an error, react.
 -- - If the message isn't over yet, keep going.
-function handleReadByteResult(deviceId, state, a, b, c)
+function handleReadByteResult(lul_job, deviceId, state, a, b, c)
 	if (PERMANENT_HANDLERS == nil) then
 		if (LOG_DEBUG) then luup.log("Global handlers not set up yet") end
 		return
+	end
+	if (CURRENT_JOB and getJobId(lul_job) ~= CURRENT_JOB) then
+		-- Not my job.
+		return 5, 10, false
 	end
 	if (state == 4) then
 		-- Message complete.  Dispatch it.
@@ -1047,31 +921,46 @@ function handleReadByteResult(deviceId, state, a, b, c)
 		local messageResult = handleMessage(deviceId, handlers, a, b, c)
 		-- May have queued a message to send.
 		processSendQueue()
-		return messageResult
+		-- Job finished?
+		if (lul_job and JOBS[getJobId(lul_job)]["complete"]) then
+			-- Job finished, successfully or not.
+			CURRENT_JOB = nil
+			processSendQueue()
+			return JOBS[getJobId(lul_job)]["complete"], 0, true
+		else
+			-- Job not finished.  More bytes needed.
+			processSendQueue()
+			return 5, 10, true
+		end
 	elseif (state == 2) then
 		-- Bad checksum.  Send a negative acknowledgment message.
-		return sendNegativeAcknowledgeMessage()
+		sendNegativeAcknowledgeMessage()
+		processSendQueue()
 	elseif (state == 3) then
 		-- Junk byte.  Do nothing.  We will get the message again.
 	else
 		-- state == 5
 		-- Nothing to do yet.
 	end
+	return 5, 10, true
 end
 
 -- processSendQueue()
 -- If there are pending messages to send to the interface,
 -- send one now.
 function processSendQueue()
-	TEMPORARY_HANDLERS = {}
 	if (RECEIVE_STATE == INCOMING_EXPECTING_START) then
-		local job = getPendingJob()
-		if (job ~= nil) then
+		TEMPORARY_HANDLERS = {}
+		CURRENT_JOB = getPendingJob()
+		if (CURRENT_JOB ~= nil) then
 			-- There is a request still to send to the alarm interface.
-			local message = JOBS[job]["message"]
-			TEMPORARY_HANDLERS = JOBS[job]["handlers"]
-			-- Send the message to the alarm interface.
-			sendMessage(message)
+			TEMPORARY_HANDLERS = JOBS[CURRENT_JOB]["handlers"]
+			if (JOBS[CURRENT_JOB]["tosend"]) then
+				-- Send the message to the alarm interface.
+				local message = JOBS[CURRENT_JOB]["message"]
+				JOBS[CURRENT_JOB]["tosend"] = false
+				sendMessage(message)
+			end
 		end
 	end
 end
@@ -1083,7 +972,8 @@ function addPendingJob(job, message, handlers)
 	JOBS[job] = {
 		["complete"] = false,
 		["message"] = message,
-		["handlers"] = handlers
+		["handlers"] = handlers,
+		["tosend"] = true
 	}
 	JOBS_PENDING_SEND_TAIL = JOBS_PENDING_SEND_TAIL + 1
 	JOBS_PENDING_SEND[JOBS_PENDING_SEND_TAIL] = job
@@ -1095,35 +985,34 @@ end
 function getPendingJob()
 	if (JOBS_PENDING_SEND_TAIL >= JOBS_PENDING_SEND_HEAD) then
 		local job = JOBS_PENDING_SEND[JOBS_PENDING_SEND_HEAD]
-		-- Remove the job from the queue.
-		JOBS_PENDING_SEND[JOBS_PENDING_SEND_HEAD] = nil
-		JOBS_PENDING_SEND_HEAD = JOBS_PENDING_SEND_HEAD + 1
+		-- if (LOG_DEBUG) then luup.log("Pending job.") end
 		return job
 	else
+		-- if (LOG_DEBUG) then luup.log("No pending job.") end
 		return nil
 	end
 end
 
--- getJobId(lul_job)
--- Get a unique string for this job.
-function getJobId(lul_job)
-	return tostring(lul_job)
+-- pendingJobDone(job, status)
+-- Remove the pending job from the queue.  The head of the queue
+-- should match the given job.
+function pendingJobDone(job, status)
+	if (LOG_DEBUG) then luup.log("Finishing pending job " .. job) end
+	-- Remove the job from the queue.
+	JOBS[job]["complete"] = status
+	if (JOBS_PENDING_SEND[JOBS_PENDING_SEND_HEAD] == job) then
+		JOBS_PENDING_SEND[JOBS_PENDING_SEND_HEAD] = nil
+		JOBS_PENDING_SEND_HEAD = JOBS_PENDING_SEND_HEAD + 1
+	end
+	return 0
 end
 
--- checkJobComplete(lul_job)
--- Make up the return status for the current job/incoming event.
--- Check the state of the job and return failure, success, or
--- put off the decision.
-function checkJobComplete(lul_job)
-	-- if (LOG_DEBUG) then luup.log("Incoming: " .. getJobId(lul_job)) end
-	if (JOBS[getJobId(lul_job)]["complete"]) then
-		-- if (LOG_DEBUG) then luup.log("Incoming: state " .. JOBS[getJobId(lul_job)]["complete"]) end
-		-- This just doesn't work as advertised.
-		-- Returning 4 doesn't stop my job from being called again later.
-		return JOBS[getJobId(lul_job)]["complete"], nil, false
-	end
-	-- Job not complete yet.
-	return 5, 1, false
+-- getJobId(lul_job)
+-- Get a unique string for this job.
+-- It seems that lul_job is an opaque Lua userdata with no way
+-- to access its contents (such as the Luup jobId).  A pity.
+function getJobId(lul_job)
+	return tostring(lul_job)
 end
 
 -- validatePin(p)
@@ -1133,7 +1022,7 @@ function validatePin(p)
 	if (string.len(p) ~= 4 and CONFIGURATION_PIN_LENGTH == 4) then
 		return nil
 	elseif (string.len(p) ~= 6 and CONFIGURATION_PIN_LENGTH == 6) then
-		return nul
+		return nil
 	end
 
 	local bytes = ""
@@ -1147,6 +1036,137 @@ function validatePin(p)
 	end
 		
 	return bytes
+end
+
+-- callbackHandler(lul_request, lul_parameters, lul_outputformat)
+function callbackHandler(lul_request, lul_parameters, lul_outputformat)
+	if (lul_outputformat == "json") then
+		if (lul_request == "ZoneScan") then
+			local z = tonumber(lul_parameters.zone)
+			return "{ \"partitions\":\"" .. ZONE_SCAN[z].partitions .. "\" }"
+		elseif (lul_request == "ZoneNameScan") then
+			local z = tonumber(lul_parameters.zone)
+			-- To do: escape string.
+			return "{ \"name\":\"" .. ZONE_SCAN[z].name .. "\" }"
+		end
+	end
+end
+
+-- jobZoneScan(lul_device, lul_settings, lul_job)
+-- Invoked by the JavaScript Zone configuration tab.
+-- http://vera/port_3480/data_request?id=lu_action&serviceId=urn:futzle-com:serviceId:CaddxNX584Security1&action=ZoneScan&Zone=1&DeviceNum=n
+-- Sets the ZONE_SCAN[] variable which is later fetched from callbackHandler().
+function jobZoneScan(lul_device, lul_settings, lul_job)
+	if (LOG_DEBUG) then luup.log("Job: Alarm: ZoneScan: " .. lul_device .. " " .. lul_settings.Zone .. " job " .. getJobId(lul_job)) end
+	local z = tonumber(lul_settings.Zone)
+	-- Ask for status of this zone.
+	addPendingJob(getJobId(lul_job),
+		"\036" .. string.char(z-1),
+		{
+			[4] = function (deviceId, message)
+				if (LOG_DEBUG) then luup.log("ZoneScan job handling message: 0x04 Zone Status") end
+				if (string.byte(string.sub(message,1)) == z - 1) then
+					-- This is the zone we were asking about.
+			        if (LOG_DEBUG) then luup.log(string.format("ZoneScan Zone %d", z)) end
+					if (ZONE_VALID[z]) then
+						-- Still have responsibility to set state of zone.
+						-- In truth, JavaScript will take pains not to scan a zone already in the system.
+						processZoneStatusMessage(message)
+						updateZoneDevice(ROOT_DEVICE, zone)
+					end
+					-- Extract list of partitions this zone is in.
+					local validPartitions = ""
+					local validPartitionsBitmask = string.byte(string.sub(message,2))
+					for p = 1, 8 do
+						if (bitMask(validPartitionsBitmask, 2^(p-1))) then
+							if (validPartitions ~= "") then
+								validPartitions = validPartitions .. ","
+							end
+							validPartitions = validPartitions .. p
+						end
+					end
+					ZONE_SCAN[z] = {
+						-- Valid partitions for this zone.
+						partitions = validPartitions
+					} 
+					return pendingJobDone(getJobId(lul_job), 4)
+				else
+					-- This isn't the zone I asked about, but I may know about it.
+					if (ZONE_VALID[string.byte(string.sub(message,1)) + 1]) then
+						processZoneStatusMessage(message)
+						updateZoneDevice(ROOT_DEVICE, zone)
+					end
+				end
+				return 0
+			end,
+			[29] = function(deviceId, message)
+				if (LOG_DEBUG) then luup.log("ZoneScan job request acknowledged") end
+				return 0
+			end,
+			[31] = function(deviceId, message)
+				return pendingJobDone(getJobId(lul_job), 2)
+			end,
+		}
+	)
+	if (LOG_DEBUG) then luup.log("Job: Processing send queue") end
+	processSendQueue()
+	if (LOG_DEBUG) then luup.log("Job: Started") end
+	-- Either the timeout or incoming task will be called next.
+	return 5, 10
+end
+
+-- jobZoneNameScan(lul_device, lul_settings, lul_job)
+-- Invoked by the JavaScript Zone configuration tab.
+-- http://vera/port_3480/data_request?id=lu_action&serviceId=urn:futzle-com:serviceId:CaddxNX584Security1&action=ZoneNameScan&Zone=1&DeviceNum=n
+-- If successful, sets the ZONE_SCAN[] variable which is later fetched from callbackHandler().
+function jobZoneNameScan(lul_device, lul_settings, lul_job)
+	if (LOG_DEBUG) then luup.log("Job: Alarm: ZoneNameScan: " .. lul_device .. " " .. lul_settings.Zone .. " job " .. getJobId(lul_job)) end
+	if (not CAPABILITY_ZONE_NAME) then
+		-- Not allowed to ask zone names.  Return error.
+		return 2, nil
+	end
+	local z = tonumber(lul_settings.Zone)
+	-- Ask for status of this zone.
+	addPendingJob(getJobId(lul_job),
+		"\035" .. string.char(z - 1), 
+		{
+			[3] = function (deviceId, message)
+				if (LOG_DEBUG) then luup.log("Handling message: 0x03 Zone Name") end
+				-- First byte is the zone number.
+				local zoneNumber = string.byte(string.sub(message,1)) + 1
+				if (z ~= zoneNumber) then
+					-- This isn't the zone I was asking about.
+					-- (Who else is asking about zone names?)
+					return 0
+				end
+				-- Next 16 bytes are the zone name.  Strip trailing spaces.
+				local zoneName = string.gsub(string.sub(message,2,17), " *$", "")
+				if (zoneName == "") then
+					-- No name, so stop trying.
+					return pendingJobDone(getJobId(lul_job), 2)
+				end
+				-- Use this zone name.
+				-- Assume ZoneScan has already created ZONE_SCAN[z].
+				ZONE_SCAN[z].name = zoneName 
+				return pendingJobDone(getJobId(lul_job), 4)
+			end,
+			[31] = function (deviceId, message)
+				if (LOG_DEBUG) then luup.log("Handling message: 0x1F Message Reject") end
+				-- The interface can't give me a zone name after all.
+				return pendingJobDone(getJobId(lul_job), 2)
+			end,
+			["timeout"] = function (deviceId, message)
+				if (LOG_DEBUG) then luup.log("Timeout while getting zone name") end
+				-- The interface can't give me a zone name after all.
+				return pendingJobDone(getJobId(lul_job), 2)
+			end,
+		}
+	)
+	if (LOG_DEBUG) then luup.log("Job: Processing send queue") end
+	processSendQueue()
+	if (LOG_DEBUG) then luup.log("Job: Started") end
+	-- Either the timeout or incoming task will be called next.
+	return 5, 10
 end
 
 -- jobSetArmed(lul_device, lul_settings, lul_job)
@@ -1169,22 +1189,34 @@ function jobSetArmed(lul_device, lul_settings, lul_job)
 	addPendingJob(getJobId(lul_job),
 		"\063" .. string.char(zone-1),
 		{
+			[4] = function (deviceId, message)
+				if (LOG_DEBUG) then luup.log("SetArmed job handling message: 0x04 Zone Status") end
+				if (string.byte(string.sub(message,1)) == zone - 1) then
+					-- This is the zone we were asking about.
+			        if (LOG_DEBUG) then luup.log(string.format("Zone %d", zone)) end
+					handleZoneStatusMessage(ROOT_DEVICE, message)
+					if (ZONE_STATUS[zone]["isBypassed"] == (lul_settings.newArmedValue == "0")) then
+						return pendingJobDone(getJobId(lul_job), 4)
+					end
+				else
+					-- This isn't the zone I asked about, but I may know about it.
+					if (ZONE_VALID[string.byte(string.sub(message,1)) + 1]) then
+						handleZoneStatusMessage(ROOT_DEVICE, message)
+					end
+				end
+				return 0
+			end,
 			[29] = function(deviceId, message)
-				-- Nothing more to do.  The interface will
-				-- send a snapshot with the updated info RSN,
-				-- and we'll update the zone device then.
-				JOBS[getJobId(lul_job)]["complete"] = 4
 				return 0
 			end,
 			[31] = function(deviceId, message)
-				JOBS[getJobId(lul_job)]["complete"] = 2
-				return 0
+				return pendingJobDone(getJobId(lul_job), 2)
 			end,
 		}
 	)
 	if (LOG_DEBUG) then luup.log("Job: Processing send queue") end
 	processSendQueue()
-	if (LOG_DEBUG) then luup.log("Job: Done") end
+	if (LOG_DEBUG) then luup.log("Job: Started") end
 	-- Either the timeout or incoming task will be called next.
 	return 5, 10
 end
@@ -1220,18 +1252,16 @@ function jobRequestQuickArmMode(lul_device, lul_settings, lul_job)
 				-- Nothing more to do.  The interface will
 				-- send a snapshot with the updated info RSN,
 				-- and we'll update the partition device then.
-				JOBS[getJobId(lul_job)]["complete"] = 4
-				return 0
+				return pendingJobDone(getJobId(lul_job), 4)
 			end,
 			[31] = function(deviceId, message)
-				JOBS[getJobId(lul_job)]["complete"] = 2
-				return 0
+				return pendingJobDone(getJobId(lul_job), 2)
 			end,
 		}
 	)
 	if (LOG_DEBUG) then luup.log("Job: Processing send queue") end
 	processSendQueue()
-	if (LOG_DEBUG) then luup.log("Job: Done") end
+	if (LOG_DEBUG) then luup.log("Job: Started") end
 	-- Either the timeout or incoming task will be called next.
 	return 5, 10
 end
@@ -1271,18 +1301,16 @@ function jobRequestArmMode(lul_device, lul_settings, lul_job)
 				-- Nothing more to do.  The interface will
 				-- send a snapshot with the updated info RSN,
 				-- and we'll update the partition device then.
-				JOBS[getJobId(lul_job)]["complete"] = 4
-				return 0
+				return pendingJobDone(getJobId(lul_job), 4)
 			end,
 			[31] = function(deviceId, message)
-				JOBS[getJobId(lul_job)]["complete"] = 2
-				return 0
+				return pendingJobDone(getJobId(lul_job), 2)
 			end,
 		}
 	)
 	if (LOG_DEBUG) then luup.log("Job: Processing send queue") end
 	processSendQueue()
-	if (LOG_DEBUG) then luup.log("Job: Done") end
+	if (LOG_DEBUG) then luup.log("Job: Started") end
 	-- Either the timeout or incoming task will be called next.
 	return 5, 10
 end
@@ -1320,18 +1348,16 @@ function jobRequestPanicMode(lul_device, lul_settings, lul_job)
 				-- Nothing more to do.  The interface will
 				-- send a snapshot with the updated info RSN,
 				-- and we'll update the partition device then.
-				JOBS[getJobId(lul_job)]["complete"] = 4
-				return 0
+				return pendingJobDone(getJobId(lul_job), 4)
 			end,
 			[31] = function(deviceId, message)
-				JOBS[getJobId(lul_job)]["complete"] = 2
-				return 0
+				return pendingJobDone(getJobId(lul_job), 2)
 			end,
 		}
 	)
 	if (LOG_DEBUG) then luup.log("Job: Processing send queue") end
 	processSendQueue()
-	if (LOG_DEBUG) then luup.log("Job: Done") end
+	if (LOG_DEBUG) then luup.log("Job: Started") end
 	-- Either the timeout or incoming task will be called next.
 	return 5, 10
 end

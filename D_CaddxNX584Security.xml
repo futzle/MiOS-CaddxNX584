@@ -5,7 +5,8 @@
     <minor>0</minor>
   </specVersion>
   <device>
-    <deviceType>urn:schemas-futzle-com:device:caddx-alarm:1</deviceType>
+    <deviceType>urn:schemas-futzle-com:device:CaddxNX584Security:1</deviceType>
+    <staticJson>D_CaddxNX584Security.json</staticJson>
     <friendlyName>Caddx NX584 Security System</friendlyName>
     <manufacturer>GE Network</manufacturer>
     <manufacturerURL></manufacturerURL>
@@ -18,6 +19,13 @@
     <UDN>uuid:78f5ed30-db5e-46c7-a12e-838c9d4eb0e3</UDN>
     <UPC>123456789</UPC>
     <serviceList>
+      <service>
+        <serviceType>urn:schemas-futzle-com:service:CaddxNX584Security:1</serviceType>
+        <serviceId>urn:futzle-com:serviceId:CaddxNX584Security1</serviceId>
+        <controlURL>/upnp/control/CaddxNX584Security1</controlURL>
+        <eventSubURL>/upnp/event/CaddxNX584Security1</eventSubURL>
+        <SCPDURL>S_CaddxNX584Security.xml</SCPDURL>
+      </service>
     </serviceList>
     <implementationList>
       <implementationFile>I_CaddxNX584Security.xml</implementationFile>

@@ -7,18 +7,24 @@
 local plugin
 
 function caddxInitialize(lul_device)
+	-- Put the /etc/cmh-ludl and /etc/cmh-lu directories into the Lua include path.
 	if (package.path:find("/etc/cmh-ludl/?.lua;/etc/cmh-lu/?.lua", 1, true) == nil) then
 		package.path = package.path .. ";/etc/cmh-ludl/?.lua;/etc/cmh-lu/?.lua"
 	end
+	-- Load the Lua implementation.
 	package.loaded.L_CaddxNX584Security = nil
 	plugin = require("L_CaddxNX584Security")
+	-- For when jobs are complete, get the results.
+	-- Tunnel through from the plugin package to the top level.
+	callbackHandler = plugin.callbackHandler
+	-- Call initialization code.
 	return plugin.caddxInitialize(lul_device)
 end
 	</functions>
 
 	<incoming>
 		<lua>
-			plugin.handleReadByteResult(lul_device, plugin.readByte(lul_data));
+			plugin.handleReadByteResult(nil, lul_device, plugin.readByte(lul_data));
 		</lua>
 	</incoming>
 
@@ -26,17 +32,34 @@ end
 
 	<actionList>
 		<action>
+			<serviceId>urn:futzle-com:serviceId:CaddxNX584Security1</serviceId>
+			<name>ZoneScan</name>
+			<job>
+				return plugin.jobZoneScan(lul_device, lul_settings, lul_job)
+			</job>
+			<incoming>
+				return plugin.handleReadByteResult(lul_job, lul_device, plugin.readByte(lul_data));
+			</incoming>
+		</action>
+		<action>
+			<serviceId>urn:futzle-com:serviceId:CaddxNX584Security1</serviceId>
+			<name>ZoneNameScan</name>
+			<job>
+				return plugin.jobZoneNameScan(lul_device, lul_settings, lul_job)
+			</job>
+			<incoming>
+				return plugin.handleReadByteResult(lul_job, lul_device, plugin.readByte(lul_data));
+			</incoming>
+		</action>
+		<action>
 			<serviceId>urn:micasaverde-com:serviceId:SecuritySensor1</serviceId>
 			<name>SetArmed</name>
 			<job>
 				return plugin.jobSetArmed(lul_device, lul_settings, lul_job)
 			</job>
 			<incoming>
-				return plugin.checkJobComplete(lul_job)
+				return plugin.handleReadByteResult(lul_job, lul_device, plugin.readByte(lul_data));
 			</incoming>
-			<timeout>
-				return plugin.checkJobComplete(lul_job)
-			</timeout>
 		</action>
 		<action>
 			<serviceId>urn:micasaverde-com:serviceId:AlarmPartition1</serviceId>
@@ -45,11 +68,8 @@ end
 				return plugin.jobRequestQuickArmMode(lul_device, lul_settings, lul_job)
 			</job>
 			<incoming>
-				return plugin.checkJobComplete(lul_job)
+				return plugin.handleReadByteResult(lul_job, lul_device, plugin.readByte(lul_data));
 			</incoming>
-			<timeout>
-				return plugin.checkJobComplete(lul_job)
-			</timeout>
 		</action>
 		<action>
 			<serviceId>urn:micasaverde-com:serviceId:AlarmPartition1</serviceId>
@@ -58,11 +78,8 @@ end
 				return plugin.jobRequestArmMode(lul_device, lul_settings, lul_job)
 			</job>
 			<incoming>
-				return plugin.checkJobComplete(lul_job)
+				return plugin.handleReadByteResult(lul_job, lul_device, plugin.readByte(lul_data));
 			</incoming>
-			<timeout>
-				return plugin.checkJobComplete(lul_job)
-			</timeout>
 		</action>
 		<action>
 			<serviceId>urn:micasaverde-com:serviceId:AlarmPartition1</serviceId>
@@ -71,11 +88,8 @@ end
 				return plugin.jobRequestPanicMode(lul_device, lul_settings, lul_job)
 			</job>
 			<incoming>
-				return plugin.checkJobComplete(lul_job)
+				return plugin.handleReadByteResult(lul_job, lul_device, plugin.readByte(lul_data));
 			</incoming>
-			<timeout>
-				return plugin.checkJobComplete(lul_job)
-			</timeout>
 		</action>
 	</actionList>
 </implementation>

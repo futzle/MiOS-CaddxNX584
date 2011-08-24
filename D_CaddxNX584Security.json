@@ -1,0 +1,82 @@
+{
+    "flashicon": "icons\/Door_Lock.swf",
+    "imgIconBody": "",
+    "imgIconDimmable": "",
+    "imgIconTurnable": "",
+    "imgIconMin": "pics\/devices\/Door_UNLOCKED.png",
+    "imgIconMax": "pics\/devices\/Door_LOCKED.png",
+    "halloIconsDir": "pics\/hallo",
+    "DisplayStatus": {
+    },
+    "doc_url": {
+        "doc_language": 1,
+        "doc_manual": 1,
+        "doc_version": 1,
+        "doc_platform": 0,
+        "doc_page": "devices" 
+    },
+    "ToggleButton": 1,
+    "Tabs": [
+        {
+            "Label": {
+                "lang_tag": "tabname_control",
+                "text": "Control"
+            },
+            "Position": "0",
+            "TabType": "flash",
+            "ControlGroup": [
+                {
+                    "id": "1",
+                    "type": "info"
+                },
+            ],
+            "Control": [
+            ]
+        },
+	{
+            "Label": {
+                "lang_tag": "zones",
+                "text": "Zones"
+            },
+            "Position": "1",
+            "TabType": "javascript",
+            "ScriptName": "J_CaddxNX584Security.js",
+            "Function": "zoneTab"
+	},
+        {
+            "Label": {
+                "lang_tag": "notifications",
+                "text": "Notifications"
+            },
+            "Position": "2",
+            "TabType": "javascript",
+            "ScriptName": "shared.js",
+            "Function": "device_notifications"
+        },
+        {
+            "Label": {
+                "lang_tag": "logs",
+                "text": "Logs"
+            },
+            "Position": "3",
+            "TabType": "javascript",
+            "ScriptName": "shared.js",
+            "Function": "device_logs"
+        },
+        {
+            "Label": {
+                "lang_tag": "advanced",
+                "text": "Advanced"
+            },
+            "Position": "4",
+            "TabType": "javascript",
+            "ScriptName": "shared.js",
+            "Function": "advanced_device"
+        }
+    ],
+    "DeviceType": "urn:schemas-futzle-com:device:CaddxNX584Security:1",
+    "eventList": {
+    },
+    "sceneList": {
+    }
+}
