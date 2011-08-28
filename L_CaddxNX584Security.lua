@@ -1270,7 +1270,7 @@ end
 -- Arm, stay-arm or disarm a partition with a PIN code.
 function jobRequestArmMode(lul_device, lul_settings, lul_job)
 	if (LOG_DEBUG) then luup.log("Job: Partition: RequestArmMode to " .. lul_settings.State .. " ".. lul_device .. " job " .. getJobId(lul_job)) end
-	if (string.len(lul_settings.PINCode) == 0) then
+	if (lul_settings.PINCode == nil or string.len(lul_settings.PINCode) == 0) then
 		-- With no PIN, act the same as Quick Arm.
 		return jobRequestQuickArmMode(lul_device, lul_settings, lul_job)
 	end
