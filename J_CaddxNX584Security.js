@@ -1,10 +1,14 @@
-var existingZone = new Array();
+var existingZone;
 
 // Entry point for "Zones" tab.
 function zoneTab(device)
 {
+	existingZone = new Array();
+	
 	var html = "";
-	html += '<div>';
+	html += '<p id="caddx_saveChanges" style="display:none; font-weight: bold; text-align: center;">Close dialog and press SAVE to commit changes.</p>';
+	html += '<div style="margin: 5px; padding: 5px; border: 1px grey solid;">';
+	html += '<p style="font-weight: bold; text-align: center;">Existing zones</p>';
 	html += '<table width="100%">';
 	html += '<thead><th>Zone</th><th>Name</th><th>Room</th><th>Type</th><th>Action</th></thead>';
 	html += '<tbody>';
@@ -28,7 +32,16 @@ function zoneTab(device)
 				jsonp.ud.devices[checkZoneDevice].altid == "Zone-" + z)
 				{
 					zoneName = jsonp.ud.devices[checkZoneDevice].name;
-					zoneRoom = jsonp.get_room_by_id(jsonp.ud.devices[checkZoneDevice].room).name;
+					var zoneRoomId = jsonp.ud.devices[checkZoneDevice].room;
+					if (zoneRoomId == "0")
+					{
+						// Room 0 is unassigned, would break get_room_by_id().
+						zoneRoom = "Unassigned";
+					}
+					else
+					{
+						zoneRoom = jsonp.get_room_by_id(zoneRoomId).name;
+					}
 					zoneFound = true;
 				}
 			}
@@ -53,11 +66,33 @@ function zoneTab(device)
 	html += '</div>';
 
 	// Scan button for scanning new zones.
-	html += '<div>';
+	html += '<div style="margin: 5px; padding: 5px; border: 1px grey solid;">';
+	html += '<p style="font-weight: bold; text-align: center;">Scan zones</p>';
 	html += 'Maximum zone: <input type="text" id="caddx_maxZone" size="3"></input>';
 	html += ' <input type="button" onclick="scanAllZones($F(\'caddx_maxZone\'), ' + device + ')" value="Scan"></input>';
-	html += '</div>';
 	html += '<div id="zoneScanOutput"></div>';
+	html += '</div>';
+
+	// Let user add a zone manually.
+	html += '<div style="margin: 5px; padding: 5px; border: 1px grey solid;">';
+	html += '<p style="font-weight: bold; text-align: center;">Manually add zone</p>';
+	html += '<table width="100%">';
+	html += '<thead><th>Zone</th><th>Name</th><th>Type</th><th>Action</th></thead>';
+	html += '<tbody>';
+	html += '<tr>';
+	html += '<td><input id="caddx_zone_manual" type="text" size="3"></input></td>';
+	html += '<td><input id="caddx_zoneName_manual" type="text" size="17"></input></td>';
+	html += '<td><select id="caddx_zoneType_manual">' +
+		'<option value="D_MotionSensor1.xml" selected="selected" >Motion</option>' +
+		'<option value="D_DoorSensor1.xml">Door</option>' +
+		'<option value="D_SmokeSensor1.xml">Smoke</option>' +
+		'<option value="D_TempLeakSensor1.xml">Temp Leak</option>' +
+		'</select></td>';
+	html += '<td><input type="button" value="Add" onclick="addManualZone(this,' + device + ')"></input></td>';
+	html += '</tr>';
+	html += '</tbody>';
+	html += '</table>';
+	html += '</div>';
 
 	set_panel_html(html);
 }
@@ -320,6 +355,7 @@ function addScannedZone(z, text, type, button, device)
 	set_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "Zone" + z + "Type", $F(type), 0);
 	// Feedback.
 	button.setValue("Added");
+	$('caddx_saveChanges').show();
 }
 
 // Delete variables for an existing zone when the user clicks the "Delete" button.
@@ -330,4 +366,25 @@ function deleteExistingZone(z, button, device)
 	set_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "Zone" + z + "Name", "", 0);
 	set_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "Zone" + z + "Type", "", 0);
 	button.setValue("Deleted");
+	$('caddx_saveChanges').show();
+}
+
+// Add a zone manually.
+function addManualZone(button, device)
+{
+	var z = $F("caddx_zone_manual");
+	var name = $F("caddx_zoneName_manual");
+	if (z > 0 && z <= 48 && !existingZone[z] && name != "")
+	{
+		button.disable();
+		$("caddx_zone_manual").disable();
+		$("caddx_zoneName_manual").disable();
+		set_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "Zone" + z + "Name", name, 0);
+		set_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "Zone" + z + "Type", $F("caddx_zoneType_manual"), 0);
+		$("caddx_zoneType_manual").disable();
+		// Feedback.
+		button.setValue("Added");
+		$('caddx_saveChanges').show();
+	}
+
 }
