@@ -170,6 +170,7 @@ function caddxInitialize(deviceId)
 
 	-- Scan result callbacks.
 	ZONE_SCAN = {}
+	luup.register_handler("callbackHandler", "GetConfiguration")
 	luup.register_handler("callbackHandler", "ZoneScan")
 	luup.register_handler("callbackHandler", "ZoneNameScan")
 
@@ -1038,6 +1039,22 @@ function validatePin(p)
 	return bytes
 end
 
+-- getConfiguration()
+-- Return the configuration learned at startup, as a JSON object.
+-- Used by the JavaScript Configuration tab.
+function getConfiguration()
+	return "{" ..
+		"\"pinLength\": " .. CONFIGURATION_PIN_LENGTH .. "," ..
+		"\"capability\": { " ..
+			"\"zoneName\": " .. (CAPABILITY_ZONE_NAME and "\"true\"" or "\"false\"") .. "," ..
+			"\"setClock\": " .. (CAPABILITY_SET_CLOCK and "\"true\"" or "\"false\"") .. "," ..
+			"\"primaryKeypadWithPin\": " .. (CAPABILITY_PRIMARY_KEYPAD_WITH_PIN and "\"true\"" or "\"false\"") .. "," ..
+			"\"secondaryKeypad\": " .. (CAPABILITY_SECONDARY_KEYPAD and "\"true\"" or "\"false\"") .. "," ..
+			"\"zoneBypass\": " .. (CAPABILITY_ZONE_BYPASS and "\"true\"" or "\"false\"") .. 
+		"}" ..
+		"}"
+end
+
 -- callbackHandler(lul_request, lul_parameters, lul_outputformat)
 function callbackHandler(lul_request, lul_parameters, lul_outputformat)
 	if (lul_outputformat == "json") then
@@ -1048,6 +1065,8 @@ function callbackHandler(lul_request, lul_parameters, lul_outputformat)
 			local z = tonumber(lul_parameters.zone)
 			-- To do: escape string.
 			return "{ \"name\":\"" .. ZONE_SCAN[z].name .. "\" }"
+		elseif (lul_request == "GetConfiguration") then
+			return getConfiguration();
 		end
 	end
 end

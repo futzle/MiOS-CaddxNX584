@@ -35,20 +35,40 @@
         },
 	{
             "Label": {
+                "lang_tag": "configuration",
+                "text": "Configuration"
+            },
+            "Position": "1",
+            "TabType": "javascript",
+            "ScriptName": "J_CaddxNX584Security.js",
+            "Function": "configurationTab"
+	},
+	{
+            "Label": {
                 "lang_tag": "zones",
                 "text": "Zones"
             },
-            "Position": "1",
+            "Position": "2",
             "TabType": "javascript",
             "ScriptName": "J_CaddxNX584Security.js",
             "Function": "zoneTab"
 	},
         {
             "Label": {
+                "lang_tag": "advanced",
+                "text": "Advanced"
+            },
+            "Position": "3",
+            "TabType": "javascript",
+            "ScriptName": "shared.js",
+            "Function": "advanced_device"
+        },
+        {
+            "Label": {
                 "lang_tag": "notifications",
                 "text": "Notifications"
             },
-            "Position": "2",
+            "Position": "4",
             "TabType": "javascript",
             "ScriptName": "shared.js",
             "Function": "device_notifications"
@@ -58,20 +78,10 @@
                 "lang_tag": "logs",
                 "text": "Logs"
             },
-            "Position": "3",
+            "Position": "5",
             "TabType": "javascript",
             "ScriptName": "shared.js",
             "Function": "device_logs"
-        },
-        {
-            "Label": {
-                "lang_tag": "advanced",
-                "text": "Advanced"
-            },
-            "Position": "4",
-            "TabType": "javascript",
-            "ScriptName": "shared.js",
-            "Function": "advanced_device"
         }
     ],
     "DeviceType": "urn:schemas-futzle-com:device:CaddxNX584Security:1",

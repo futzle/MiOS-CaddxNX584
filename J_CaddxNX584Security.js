@@ -1,3 +1,83 @@
+/**********
+ *
+ * Configuration tab
+ *
+ **********/
+
+function configurationTab(device)
+{
+	var html = '';
+	html += '<p id="caddx_saveChanges" style="display:none; font-weight: bold; text-align: center;">Close dialog and press SAVE to commit changes.</p>';
+
+	// Configuration of panel.
+	html += '<div id="caddx_configuration"></div>';
+	set_panel_html(html);
+
+	new Ajax.Request("../port_3480/data_request", {
+		method: "get",
+		parameters: {
+			id: "lr_GetConfiguration",
+			output_format: "json"
+		},
+		onSuccess: function (response) {
+			var configuration = response.responseText.evalJSON();
+			if (configuration == undefined)
+			{
+				$('caddx_configuration').innerHTML = 'Failed to get configuration';
+			}
+			else
+			{
+				// Success.  Populate.
+				var table ='<table width="100%"><tbody>';
+				table += '<tr>';
+				table += '<td>PIN length</td>';
+				table += '<td style="font-weight: bold;">' + configuration["pinLength"] + '</td>';
+				table += '</tr>';
+				table += '<tr>';
+				table += '<td>Zone name</td>';
+				table += configuration["capability"]["zoneName"] == "true" ? '<td title="Request zone names from a keypad connected to the panel" style="font-weight: bold;">Enabled</td>' : '<td title="Choose a default name for each zone" style="font-weight: bold;">Disabled</td>';
+				table += '</tr>';
+				table += '<tr>';
+				table += '<td>Set panel clock</td>';
+				table += configuration["capability"]["setClock"] == "true" ? '<td title="Set the panel\'s date and time from MiOS" style="font-weight: bold;">Enabled</td>' : '<td title="Do not set the panel\'s clock" style="font-weight: bold;">Disabled</td>';
+				table += '</tr>';
+				table += '<tr>';
+				table += '<td>Primary keypad function (with PIN)</td>';
+				table += configuration["capability"]["primaryKeypadWithPin"] == "true" ? '<td title="Arm and disarm the panel with a PIN" style="font-weight: bold;">Enabled</td>' : '<td title="Arming and disarming with a PIN is not possible" style="font-weight: bold;">Disabled</td>';
+				table += '</tr>';
+				table += '<tr>';
+				table += '<td>Secondary keypad function</td>';
+				table += configuration["capability"]["secondaryKeypad"] == "true" ? '<td title="Allow Quick Arm without PIN" style="font-weight: bold;">Enabled</td>' : '<td title="Disallow Quick Arm and Panic" style="font-weight: bold;">Disabled</td>';
+				table += '</tr>';
+				table += '<tr>';
+				table += '<td>Zone bypass</td>';
+				table += configuration["capability"]["zoneBypass"] == "true" ? '<td title="Set zones\' Arm/Bypass state" style="font-weight: bold;">Enabled</td>' : '<td title="Do not allow setting of zone Arm/Bypass state" style="font-weight: bold;">Disabled</td>';
+				table += '</tr>';
+				
+				var panicEnabled = get_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "EnablePanic", 0);
+				table += '<tr>';
+				table += '<td>Panic (Police, Medical, Fire)</td>';
+				table += '<td>';
+				table += '<input type="radio" name="caddx_enablePanic" ' + (configuration["capability"]["secondaryKeypad"] == "false" || panicEnabled == '1' ? '' : 'checked="checked"') + ' onclick="set_device_state(' + device + ', \'urn:futzle-com:serviceId:CaddxNX584Security1\', \'EnablePanic\', \'\', 0); $(\'caddx_saveChanges\').show()" ></input><span style="font-weight: bold;" title="Ignore Police, Medical and Fire panic commands">Disabled</span> ';
+				table += '<input type="radio" name="caddx_enablePanic" ' + (configuration["capability"]["secondaryKeypad"] == "true" && panicEnabled == '1' ? 'checked="checked"' : '') + ' onclick="set_device_state(' + device + ', \'urn:futzle-com:serviceId:CaddxNX584Security1\', \'EnablePanic\', \'1\', 0); $(\'caddx_saveChanges\').show()" ' + (configuration["capability"]["secondaryKeypad"] == "false" ? 'disabled="disabled"' : '' )  + '></input><span style="font-weight: bold;" title="Allow Police, Medical and Fire panic (Requires Secondary keypad function to be enabled)">Enabled</span>';
+				table += '</td>';
+				table += '</tr>';
+ 				table += '</tbody></table>';
+				$('caddx_configuration').innerHTML = table;
+			}
+		}, 
+		onFailure: function () {
+			$('caddx_configuration').innerHTML = 'Failed to get configuration';
+		}
+	});
+}
+
+/**********
+ *
+ * Zones tab
+ *
+ **********/
+
 var existingZone;
 
 // Entry point for "Zones" tab.
@@ -125,7 +205,7 @@ function scanAllZones(maxZone, device)
 // Asynchronous request, so if it succeeds, monitor for the result.
 function scanZone(z, row, device)
 {
-	new Ajax.Request("/port_3480/data_request", {
+	new Ajax.Request("../port_3480/data_request", {
 		method: "get",
 		parameters: {
 			id: "lu_action",
@@ -156,7 +236,7 @@ function scanZone(z, row, device)
 // Scan Zone job, wait for the result.
 function waitForScanZoneJob(z, jobId, row, device)
 {
-	new Ajax.Request("/port_3480/data_request", {
+	new Ajax.Request("../port_3480/data_request", {
 		method: "get",
 		parameters: {
 			id: "jobstatus",
@@ -191,7 +271,7 @@ function waitForScanZoneJob(z, jobId, row, device)
 function getScanZoneResult(z, row, device)
 {
 	var partitionList;
-	new Ajax.Request("/port_3480/data_request", {
+	new Ajax.Request("../port_3480/data_request", {
 		method: "get",
 		parameters: {
 			id: "lr_ZoneScan",
@@ -230,7 +310,7 @@ function getScanZoneResult(z, row, device)
 // Asynchronous, so if it succeeds, wait for the result.
 function scanZoneName(z, name, type, action, device)
 {
-	new Ajax.Request("/port_3480/data_request", {
+	new Ajax.Request("../port_3480/data_request", {
 		method: "get",
 		parameters: {
 			id: "lu_action",
@@ -261,7 +341,7 @@ function scanZoneName(z, name, type, action, device)
 // Wait for a Zone Name scan to return.
 function waitForScanZoneNameJob(z, jobId, name, type, action, device)
 {
-	new Ajax.Request("/port_3480/data_request", {
+	new Ajax.Request("../port_3480/data_request", {
 		method: "get",
 		parameters: {
 			id: "jobstatus",
@@ -298,7 +378,7 @@ function waitForScanZoneNameJob(z, jobId, name, type, action, device)
 function getScanZoneNameResult(z, name, type, action, device)
 {
 	var partitionList;
-	new Ajax.Request("/port_3480/data_request", {
+	new Ajax.Request("../port_3480/data_request", {
 		method: "get",
 		parameters: {
 			id: "lr_ZoneNameScan",
