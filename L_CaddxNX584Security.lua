@@ -281,6 +281,25 @@ function setUpInterface(deviceId)
 					CAPABILITY_ZONE_NAME = true
 				end
 
+				-- User Information Request with PIN
+				-- Get a user's authorization and PIN
+				if (bitMask(string.byte(string.sub(message,9)), 4)) then
+					luup.log("Get User Information with PIN enabled")
+					CAPABILITY_GET_USER_INFORMATION_WITH_PIN = true
+				end
+
+				-- Set User Code with PIN
+				if (bitMask(string.byte(string.sub(message,9)), 16)) then
+					luup.log("Set User Code with PIN enabled")
+					CAPABILITY_SET_USER_CODE_WITH_PIN = true
+				end
+
+				-- Set User Authorization with PIN
+				if (bitMask(string.byte(string.sub(message,9)), 64)) then
+					luup.log("Set User Authorization with PIN enabled")
+					CAPABILITY_SET_USER_AUTHORIZATION_WITH_PIN = true
+				end
+
 				-- Set Clock can be optionally disabled.
 				if (bitMask(string.byte(string.sub(message,10)), 8)) then
 					luup.log("Set Clock enabled")
@@ -1048,6 +1067,9 @@ function getConfiguration()
 		"\"capability\": { " ..
 			"\"zoneName\": " .. (CAPABILITY_ZONE_NAME and "\"true\"" or "\"false\"") .. "," ..
 			"\"setClock\": " .. (CAPABILITY_SET_CLOCK and "\"true\"" or "\"false\"") .. "," ..
+			"\"getUserInformationWithPin\": " .. (CAPABILITY_GET_USER_INFORMATION_WITH_PIN and "\"true\"" or "\"false\"") .. "," ..
+			"\"setUserCodeWithPin\": " .. (CAPABILITY_SET_USER_CODE_WITH_PIN and "\"true\"" or "\"false\"") .. "," ..
+			"\"setUserAuthorizationWithPin\": " .. (CAPABILITY_SET_USER_AUTHORIZATION_WITH_PIN and "\"true\"" or "\"false\"") .. "," ..
 			"\"primaryKeypadWithPin\": " .. (CAPABILITY_PRIMARY_KEYPAD_WITH_PIN and "\"true\"" or "\"false\"") .. "," ..
 			"\"secondaryKeypad\": " .. (CAPABILITY_SECONDARY_KEYPAD and "\"true\"" or "\"false\"") .. "," ..
 			"\"zoneBypass\": " .. (CAPABILITY_ZONE_BYPASS and "\"true\"" or "\"false\"") .. 

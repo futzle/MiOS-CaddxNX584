@@ -53,12 +53,22 @@
             "ScriptName": "J_CaddxNX584Security.js",
             "Function": "zoneTab"
 	},
+	{
+            "Label": {
+                "lang_tag": "users",
+                "text": "Users"
+            },
+            "Position": "3",
+            "TabType": "javascript",
+            "ScriptName": "J_CaddxNX584Security.js",
+            "Function": "usersTab"
+	},
         {
             "Label": {
                 "lang_tag": "advanced",
                 "text": "Advanced"
             },
-            "Position": "3",
+            "Position": "4",
             "TabType": "javascript",
             "ScriptName": "shared.js",
             "Function": "advanced_device"
@@ -68,7 +78,7 @@
                 "lang_tag": "notifications",
                 "text": "Notifications"
             },
-            "Position": "4",
+            "Position": "5",
             "TabType": "javascript",
             "ScriptName": "shared.js",
             "Function": "device_notifications"
@@ -78,7 +88,7 @@
                 "lang_tag": "logs",
                 "text": "Logs"
             },
-            "Position": "5",
+            "Position": "6",
             "TabType": "javascript",
             "ScriptName": "shared.js",
             "Function": "device_logs"

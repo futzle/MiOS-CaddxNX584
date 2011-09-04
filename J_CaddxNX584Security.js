@@ -10,7 +10,7 @@ function configurationTab(device)
 	html += '<p id="caddx_saveChanges" style="display:none; font-weight: bold; text-align: center;">Close dialog and press SAVE to commit changes.</p>';
 
 	// Configuration of panel.
-	html += '<div id="caddx_configuration"></div>';
+	html += '<div id="caddx_configuration">Getting configuration...</div>';
 	set_panel_html(html);
 
 	new Ajax.Request("../port_3480/data_request", {
@@ -30,39 +30,74 @@ function configurationTab(device)
 				// Success.  Populate.
 				var table ='<table width="100%"><tbody>';
 				table += '<tr>';
-				table += '<td>PIN length</td>';
-				table += '<td style="font-weight: bold;">' + configuration["pinLength"] + '</td>';
+				table += '<td>PIN length*</td>';
+				table += '<td>' + configuration["pinLength"] + '</td>';
 				table += '</tr>';
-				table += '<tr>';
-				table += '<td>Zone name</td>';
-				table += configuration["capability"]["zoneName"] == "true" ? '<td title="Request zone names from a keypad connected to the panel" style="font-weight: bold;">Enabled</td>' : '<td title="Choose a default name for each zone" style="font-weight: bold;">Disabled</td>';
-				table += '</tr>';
-				table += '<tr>';
-				table += '<td>Set panel clock</td>';
-				table += configuration["capability"]["setClock"] == "true" ? '<td title="Set the panel\'s date and time from MiOS" style="font-weight: bold;">Enabled</td>' : '<td title="Do not set the panel\'s clock" style="font-weight: bold;">Disabled</td>';
-				table += '</tr>';
-				table += '<tr>';
-				table += '<td>Primary keypad function (with PIN)</td>';
-				table += configuration["capability"]["primaryKeypadWithPin"] == "true" ? '<td title="Arm and disarm the panel with a PIN" style="font-weight: bold;">Enabled</td>' : '<td title="Arming and disarming with a PIN is not possible" style="font-weight: bold;">Disabled</td>';
-				table += '</tr>';
-				table += '<tr>';
-				table += '<td>Secondary keypad function</td>';
-				table += configuration["capability"]["secondaryKeypad"] == "true" ? '<td title="Allow Quick Arm without PIN" style="font-weight: bold;">Enabled</td>' : '<td title="Disallow Quick Arm and Panic" style="font-weight: bold;">Disabled</td>';
-				table += '</tr>';
-				table += '<tr>';
-				table += '<td>Zone bypass</td>';
-				table += configuration["capability"]["zoneBypass"] == "true" ? '<td title="Set zones\' Arm/Bypass state" style="font-weight: bold;">Enabled</td>' : '<td title="Do not allow setting of zone Arm/Bypass state" style="font-weight: bold;">Disabled</td>';
-				table += '</tr>';
+
+				table += '<tr title="Request zone names from a keypad connected to the panel">';
+				table += '<td>Zone name*</td>';
+				table += '<td><input type="checkbox" disabled="disabled" ';
+				if (configuration["capability"]["zoneName"] == "true") table += 'checked="checked"';
+				table += '></input></td></tr>';
+
+				table += '<tr title="Set the panel\'s date and time from MiOS">';
+				table += '<td>Set panel clock*</td>';
+				table += '<td><input type="checkbox" disabled="disabled" ';
+				if (configuration["capability"]["setClock"] == "true") table += 'checked="checked"';
+				table += '></input></td></tr>';
+
+				table += '<tr title="Use a master PIN to get users\' PINs and authorization">';
+				table += '<td>Get user information*</td>';
+				table += '<td><input type="checkbox" disabled="disabled" ';
+				if (configuration["capability"]["getUserInformationWithPin"] == "true") table += 'checked="checked"';
+				table += '></input></td></tr>';
+
+				table += '<tr title="Use a master PIN to set users\' PINs">';
+				table += '<td>Set user code*</td>';
+				table += '<td><input type="checkbox" disabled="disabled" ';
+				if (configuration["capability"]["setUserCodeWithPin"] == "true") table += 'checked="checked"';
+				table += '></input></td></tr>';
+
+				table += '<tr title="Use a master PIN to set users\' Authorization">';
+				table += '<td>Set user authorization*</td>';
+				table += '<td><input type="checkbox" disabled="disabled" ';
+				if (configuration["capability"]["setUserAuthorizationWithPin"] == "true") table += 'checked="checked"';
+				table += '></input></td></tr>';
+
+				table += '<tr title="Arm and disarm the panel with a PIN">';
+				table += '<td>Primary keypad function*</td>';
+				table += '<td><input type="checkbox" disabled="disabled" ';
+				if (configuration["capability"]["primaryKeypadWithPin"] == "true") table += 'checked="checked"';
+				table += '></input></td></tr>';
+
+				table += '<tr title="Allow Quick Arm without PIN">';
+				table += '<td>Secondary keypad function*</td>';
+				table += '<td><input type="checkbox" disabled="disabled" ';
+				var secondaryKeypadEnabled = (configuration["capability"]["secondaryKeypad"] == "true");
+				if (secondaryKeypadEnabled) table += 'checked="checked"';
+				table += '></input></td></tr>';
+
+				if (secondaryKeypadEnabled)
+				{
+					var panicEnabled = (get_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "EnablePanic", 0) == "1");
+					table += '<tr title="Allow Police, Medical and Fire panic">';
+					table += '<td>Panic (Police, Medical, Fire)</td>';
+					table += '<td><input type="checkbox" onclick="set_device_state(' + device + ', \'urn:futzle-com:serviceId:CaddxNX584Security1\', \'EnablePanic\', $F(this) ? \'1\' : \'\', 0); $(\'caddx_saveChanges\').show()" ';
+					if (panicEnabled) table += 'checked="checked"';
+					table += '></input></td>';
+					table += '</tr>';
+				}
+
+				table += '<tr title="Set zones\' Arm/Bypass state">';
+				table += '<td>Zone bypass*</td>';
+				table += '<td><input type="checkbox" disabled="disabled" ';
+				if (configuration["capability"]["zoneBypass"] == "true") table += 'checked="checked"';
+				table += '></input></td></tr>';
 				
-				var panicEnabled = get_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "EnablePanic", 0);
-				table += '<tr>';
-				table += '<td>Panic (Police, Medical, Fire)</td>';
-				table += '<td>';
-				table += '<input type="radio" name="caddx_enablePanic" ' + (configuration["capability"]["secondaryKeypad"] == "false" || panicEnabled == '1' ? '' : 'checked="checked"') + ' onclick="set_device_state(' + device + ', \'urn:futzle-com:serviceId:CaddxNX584Security1\', \'EnablePanic\', \'\', 0); $(\'caddx_saveChanges\').show()" ></input><span style="font-weight: bold;" title="Ignore Police, Medical and Fire panic commands">Disabled</span> ';
-				table += '<input type="radio" name="caddx_enablePanic" ' + (configuration["capability"]["secondaryKeypad"] == "true" && panicEnabled == '1' ? 'checked="checked"' : '') + ' onclick="set_device_state(' + device + ', \'urn:futzle-com:serviceId:CaddxNX584Security1\', \'EnablePanic\', \'1\', 0); $(\'caddx_saveChanges\').show()" ' + (configuration["capability"]["secondaryKeypad"] == "false" ? 'disabled="disabled"' : '' )  + '></input><span style="font-weight: bold;" title="Allow Police, Medical and Fire panic (Requires Secondary keypad function to be enabled)">Enabled</span>';
-				table += '</td>';
-				table += '</tr>';
  				table += '</tbody></table>';
+
+				table += '<p>* These settings must be changed through the panel interface.</p>';
+
 				$('caddx_configuration').innerHTML = table;
 			}
 		}, 
@@ -468,3 +503,15 @@ function addManualZone(button, device)
 	}
 
 }
+
+/**********
+ *
+ * Users tab
+ *
+ **********/
+
+function usersTab(device)
+{
+	set_panel_html("Under construction");
+}
+
