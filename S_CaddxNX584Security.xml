@@ -25,5 +25,18 @@
         </argument>
       </argumentList>
     </action>
+    <action>
+      <name>UserScan</name>
+      <argumentList>
+        <argument>
+          <name>User</name>
+          <direction>in</direction>
+        </argument>
+        <argument>
+          <name>MasterPIN</name>
+          <direction>in</direction>
+        </argument>
+      </argumentList>
+    </action>
   </actionList>
 </scpd>

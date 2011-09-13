@@ -27,12 +27,12 @@ ALARM_SERVICEID = "urn:futzle-com:serviceId:CaddxNX584Security1"
 ALARM_PARTITION_SERVICEID = "urn:micasaverde-com:serviceId:AlarmPartition1"
 ALARM_ZONE_SERVICEID = "urn:micasaverde-com:serviceId:SecuritySensor1"
 
-INCOMING_EXPECTING_START = 0       -- Between messages
-INCOMING_EXPECTING_LENGTH = 1      -- Received start byte 0x7e
-INCOMING_EXPECTING_TYPE = 2        -- Received length byte
+INCOMING_EXPECTING_START = 0	   -- Between messages
+INCOMING_EXPECTING_LENGTH = 1	  -- Received start byte 0x7e
+INCOMING_EXPECTING_TYPE = 2		-- Received length byte
 INCOMING_EXPECTING_CHECKSUM1 = 3   -- Received all bytes, now need first checksum byte
 INCOMING_EXPECTING_CHECKSUM2 = 4   -- Received first checksum byte
-INCOMING_EXPECTING_MESSAGE = 5     -- Receiving message body bytes
+INCOMING_EXPECTING_MESSAGE = 5	 -- Receiving message body bytes
 
 LOG_DEBUG = true -- Debug I/O with interface.
 MAX_RETRIES = 3 -- This many failures indicates the system has failed.
@@ -170,9 +170,11 @@ function caddxInitialize(deviceId)
 
 	-- Scan result callbacks.
 	ZONE_SCAN = {}
+	USER_SCAN = {}
 	luup.register_handler("callbackHandler", "GetConfiguration")
 	luup.register_handler("callbackHandler", "ZoneScan")
 	luup.register_handler("callbackHandler", "ZoneNameScan")
+	luup.register_handler("callbackHandler", "UserScan")
 
 	-- Setup is complete.  Prepare to finish initialization.
 	if (LOG_DEBUG) then luup.log("Finished initialization") end
@@ -453,7 +455,7 @@ function setUpZone(deviceId, childDevices, z)
 	local deviceFile = luup.variable_get(ALARM_SERVICEID, "Zone" .. z .. "Type", ROOT_DEVICE)
 	local deviceName = luup.variable_get(ALARM_SERVICEID, "Zone" .. z .. "Name", ROOT_DEVICE)
 	if (deviceFile ~= nil and deviceFile ~= "") then
-	        if (LOG_DEBUG) then luup.log(string.format("Zone %d (%s): %s", z, deviceName, deviceFile)) end
+			if (LOG_DEBUG) then luup.log(string.format("Zone %d (%s): %s", z, deviceName, deviceFile)) end
 		luup.chdev.append(
 			ROOT_DEVICE, childDevices,
 			"Zone-" .. z, deviceName,
@@ -1047,6 +1049,7 @@ function validatePin(p)
 
 	local bytes = ""
 	for c = 1,string.len(p),2 do
+		-- Little endian.
 		bytes = bytes .. string.char(tonumber(string.sub(p, c, c)) + tonumber(string.sub(p, c + 1, c + 1)) * 16)
 	end
 
@@ -1058,10 +1061,66 @@ function validatePin(p)
 	return bytes
 end
 
--- getConfiguration()
+-- unpackPin(s)
+-- Extract a packed PIN into a human-readable string.
+function unpackPin(s)
+	if (string.len(s) ~= 3) then
+		return nil
+	end
+
+	local result = ""
+	-- F digit is for unset PINs.
+	local digitValue = "0123456789ABCDE-"
+	for c = 1,CONFIGURATION_PIN_LENGTH/2 do
+		-- Little endian.
+		local digit1 = 1 + string.byte(s:sub(c)) % 16
+		result = result .. digitValue:sub(digit1, digit1)
+		local digit2 = 1 + math.floor(string.byte(s:sub(c)) / 16)
+		result = result .. digitValue:sub(digit2, digit2)
+	end
+
+	return result
+end
+
+-- getUserInformationJson(u)
+-- Given a USER_SCAN[] entry, produce JSON output
+-- for a lr_UserScan callback.
+function getUserInformationJson(u)
+	local authorization = {}
+	if (u.authorization.arm ~= nil) then
+		table.insert(authorization, "\"arm\": \"" .. u.authorization.arm .. "\"");
+	end
+	if (u.authorization.disarm ~= nil) then
+		table.insert(authorization, "\"disarm\": \"true\"");
+	end
+	if (u.authorization.master ~= nil) then
+		table.insert(authorization, "\"master\": \"true\"");
+	end
+	if (u.authorization.report ~= nil) then
+		table.insert(authorization, "\"report\": \"true\"");
+	end
+	if (u.authorization.outputEnable ~= nil) then
+		local outputEnable = {}
+		for o = 1,4 do
+			if (u.authorization.outputEnable[o]) then
+				table.insert(outputEnable, o)
+			end
+		end
+		table.insert(authorization, "\"outputEnable\": \"" .. table.concat(outputEnable, ",") .. "\"");
+	end
+	return "{" ..
+		"\"pin\": \"" .. u.pin .. "\"," ..
+		"\"partitions\": \"" .. u.partitions .. "\"," ..
+		"\"authorization\": {" ..
+			table.concat(authorization, ",") ..
+    	"}" ..
+    	"}"
+end
+
+-- getConfigurationJson()
 -- Return the configuration learned at startup, as a JSON object.
 -- Used by the JavaScript Configuration tab.
-function getConfiguration()
+function getConfigurationJson()
 	return "{" ..
 		"\"pinLength\": " .. CONFIGURATION_PIN_LENGTH .. "," ..
 		"\"capability\": { " ..
@@ -1087,8 +1146,11 @@ function callbackHandler(lul_request, lul_parameters, lul_outputformat)
 			local z = tonumber(lul_parameters.zone)
 			-- To do: escape string.
 			return "{ \"name\":\"" .. ZONE_SCAN[z].name .. "\" }"
+		elseif (lul_request == "UserScan") then
+			local u = tonumber(lul_parameters.user)
+			return getUserInformationJson(USER_SCAN[u])
 		elseif (lul_request == "GetConfiguration") then
-			return getConfiguration();
+			return getConfigurationJson();
 		end
 	end
 end
@@ -1108,7 +1170,7 @@ function jobZoneScan(lul_device, lul_settings, lul_job)
 				if (LOG_DEBUG) then luup.log("ZoneScan job handling message: 0x04 Zone Status") end
 				if (string.byte(string.sub(message,1)) == z - 1) then
 					-- This is the zone we were asking about.
-			        if (LOG_DEBUG) then luup.log(string.format("ZoneScan Zone %d", z)) end
+					if (LOG_DEBUG) then luup.log(string.format("ZoneScan Zone %d", z)) end
 					if (ZONE_VALID[z]) then
 						-- Still have responsibility to set state of zone.
 						-- In truth, JavaScript will take pains not to scan a zone already in the system.
@@ -1210,6 +1272,97 @@ function jobZoneNameScan(lul_device, lul_settings, lul_job)
 	return 5, 10
 end
 
+-- jobUserScan(lul_device, lul_settings, lul_job)
+-- Invoked by the JavaScript User configuration tab.
+-- http://vera/port_3480/data_request?id=lu_action&serviceId=urn:futzle-com:serviceId:CaddxNX584Security1&action=UserScan&User=1&MasterPIN=xxxx&DeviceNum=n
+-- Sets the USER_SCAN[] variable which is later fetched from callbackHandler().
+function jobUserScan(lul_device, lul_settings, lul_job)
+	if (LOG_DEBUG) then luup.log("Job: Alarm: UserScan: " .. lul_device .. " " .. lul_settings.User .. " job " .. getJobId(lul_job)) end
+
+	if (not CAPABILITY_GET_USER_INFORMATION_WITH_PIN) then
+		-- Cannot get user information; return error.
+		return 2, nil
+	end
+	local masterPIN = validatePin(lul_settings.MasterPIN)
+	if (masterPIN == nil) then return 2, nil end
+
+	local u = tonumber(lul_settings.User)
+	if (u == nil) then return 2, nil end
+
+	-- Ask for info about this user.
+	addPendingJob(getJobId(lul_job),
+		"\050" .. masterPIN .. string.char(u),
+		{
+			[18] = function (deviceId, message)
+				if (LOG_DEBUG) then luup.log("UserScan job handling message: 0x12 User Information Reply") end
+				if (string.byte(string.sub(message,1)) == u) then
+					-- This is the user we were asking about.
+					if (LOG_DEBUG) then luup.log(string.format("UserScan User %d", u)) end
+
+					-- Get the user's PIN.
+					local pin = unpackPin(string.sub(message,2,4))
+
+					-- Get the user's authorization.
+					local authorization = {}
+					-- High bit affects meaning of other bits.
+					if (bitMask(string.byte(string.sub(message,5)), 128)) then
+						authorization["outputEnable"] = {}
+						authorization["outputEnable"][1] = bitMask(string.byte(string.sub(message,5)), 1)
+						authorization["outputEnable"][2] = bitMask(string.byte(string.sub(message,5)), 2)
+						authorization["outputEnable"][3] = bitMask(string.byte(string.sub(message,5)), 4)
+						authorization["outputEnable"][4] = bitMask(string.byte(string.sub(message,5)), 8)
+					else
+						if (bitMask(string.byte(string.sub(message,5)), 2)) then authorization["arm"] = "all" end
+						if (bitMask(string.byte(string.sub(message,5)), 4)) then authorization["arm"] = "closing" end
+						if (bitMask(string.byte(string.sub(message,5)), 8)) then authorization["master"] = true end
+					end
+					if (bitMask(string.byte(string.sub(message,5)), 16)) then
+						authorization["arm"] = "all"
+						authorization["disarm"] = true 
+					end
+					if (bitMask(string.byte(string.sub(message,5)), 32)) then authorization["bypass"] = true end
+					if (bitMask(string.byte(string.sub(message,5)), 64)) then authorization["report"] = true end
+
+					-- Extract list of partitions this zone is in.
+					local authorizedPartitions = ""
+					local authorizedPartitionsBitmask = string.byte(string.sub(message,6))
+					for p = 1, 8 do
+						if (bitMask(authorizedPartitionsBitmask, 2^(p-1))) then
+							if (authorizedPartitions ~= "") then
+								authorizedPartitions = authorizedPartitions .. ","
+							end
+							authorizedPartitions = authorizedPartitions .. p
+						end
+					end
+
+					USER_SCAN[u] = {
+						partitions = authorizedPartitions,
+						authorization = authorization,
+						pin = pin,
+					} 
+					return pendingJobDone(getJobId(lul_job), 4)
+				end
+				return 0
+			end,
+			[28] = function(deviceId, message)
+				return pendingJobDone(getJobId(lul_job), 2)
+			end,
+			[29] = function(deviceId, message)
+				if (LOG_DEBUG) then luup.log("UserScan job request acknowledged") end
+				return 0
+			end,
+			[31] = function(deviceId, message)
+				return pendingJobDone(getJobId(lul_job), 2)
+			end,
+		}
+	)
+	if (LOG_DEBUG) then luup.log("Job: Processing send queue") end
+	processSendQueue()
+	if (LOG_DEBUG) then luup.log("Job: Started") end
+	-- Either the timeout or incoming task will be called next.
+	return 5, 10
+end
+
 -- jobSetArmed(lul_device, lul_settings, lul_job)
 -- Set the armed/bypass state of a zone device.
 function jobSetArmed(lul_device, lul_settings, lul_job)
@@ -1234,7 +1387,7 @@ function jobSetArmed(lul_device, lul_settings, lul_job)
 				if (LOG_DEBUG) then luup.log("SetArmed job handling message: 0x04 Zone Status") end
 				if (string.byte(string.sub(message,1)) == zone - 1) then
 					-- This is the zone we were asking about.
-			        if (LOG_DEBUG) then luup.log(string.format("Zone %d", zone)) end
+					if (LOG_DEBUG) then luup.log(string.format("Zone %d", zone)) end
 					handleZoneStatusMessage(ROOT_DEVICE, message)
 					if (ZONE_STATUS[zone]["isBypassed"] == (lul_settings.newArmedValue == "0")) then
 						return pendingJobDone(getJobId(lul_job), 4)

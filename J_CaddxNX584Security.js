@@ -512,6 +512,206 @@ function addManualZone(button, device)
 
 function usersTab(device)
 {
-	set_panel_html("Under construction");
+	var html = '';
+	html += '<p id="caddx_saveChanges" style="display:none; font-weight: bold; text-align: center;">Close dialog and press SAVE to commit changes.</p>';
+
+	// User list.
+	html += '<div id="caddx_users">Getting configuration...</div>';
+	set_panel_html(html);
+
+	// Need to know whether panel interface allows fetching PIN and authorization.
+	new Ajax.Request("../port_3480/data_request", {
+		method: "get",
+		parameters: {
+			id: "lr_GetConfiguration",
+			output_format: "json"
+		},
+		onSuccess: function (response) {
+			var configuration = response.responseText.evalJSON();
+			if (configuration == undefined)
+			{
+				$('caddx_users').innerHTML = 'Failed to get configuration';
+			}
+			else
+			{
+				// Success.  Populate.
+				var getUserInformationEnabled = (configuration["capability"]["getUserInformationWithPin"] == "true");
+				var setUserCodeEnabled = (configuration["capability"]["setUserCodeWithPin"] == "true");
+				var setUserAuthorizationEnabled = (configuration["capability"]["setUserAuthorizationWithPin"] == "true");
+
+				var table = '';
+				if (getUserInformationEnabled || setUserCodeEnabled || setUserAuthorizationEnabled)
+				{
+					table += '<p>Master PIN <input id="caddx_masterPin" type="text" size="' + (configuration["pinLength"] - -1) + '"></input>';
+					if (getUserInformationEnabled) table += ' <input type="button" value="Get info" onclick="scanAllUsers(' + (configuration["pinLength"]-0) + ',' + device + ')"></input>';
+					table += '</p>';
+				}
+				table +='<table id="caddx_usertable" width="100%"><thead>';
+				table += '<th>User</th>';
+				table += '<th>Name</th>';
+				if (getUserInformationEnabled || setUserCodeEnabled) table += '<th>PIN</th>';
+				if (getUserInformationEnabled || setUserAuthorizationEnabled) table += '<th>Authorization</th>';
+				table += '<th>Action</th>';
+				table += '</thead><tbody>';
+
+				var u;
+				for (u = 1; u < 10; u++)  // Max user number? 10 on mine.
+				{
+					var username = get_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "User" + u, 0);
+					if (username != undefined && username != "")
+					{
+						table += '<tr class="caddx_user">';
+						table += '<td class="caddx_usernum">' + u + '</td>';
+						table += '<td><input type="text" class="caddx_username" onchange="TODO" value="' + username.escapeHTML() + '"></input></td>';
+						if (getUserInformationEnabled || setUserCodeEnabled)
+						{
+							table += '<td class="caddx_userpin">';
+							table += '</td>';
+						}
+
+						if (getUserInformationEnabled || setUserAuthorizationEnabled)
+						{
+							table += '<td class="caddx_userauthorization">';
+							table += '</td>';
+						}
+						table += '<td><input type="button" value="Hide" onclick="TODO"></input></td>';
+
+						table += '</tr>';
+					}
+				}
+
+				table += '</tbody></table>';
+
+				$('caddx_users').innerHTML = table;
+			}
+		}, 
+		onFailure: function () {
+			$('caddx_users').innerHTML = 'Failed to get configuration';
+		}
+	});
+
+}
+
+function scanAllUsers(pinLength, device)
+{
+	var pin = $F('caddx_masterPin');
+	if (pin.length != pinLength) return;
+
+	var stagger = 0;  // Delay requests a bit to prevent overload of serial line.
+	var userTable = $('caddx_usertable');
+	var userList = userTable.select('.caddx_usernum');
+	var userObjectIterator;
+	for(userObjectIterator = 0; userObjectIterator < userList.length; userObjectIterator++)
+	{
+		var u = userList[userObjectIterator].firstChild.data;
+		var pinCell = userList[userObjectIterator].parentNode.select('.caddx_userpin');
+		var authorizationCell = userList[userObjectIterator].parentNode.select('.caddx_userauthorization');
+		scanUser.delay(0.5 * stagger++, u, pin, pinCell, authorizationCell, device)
+	}
+}
+
+function scanUser(u, pin, pinCell, authorizationCell, device)
+{
+	// if (pinCell.length > 0) pinCell[0].innerHTML = "Fetching...";
+	// if (authorizationCell.length > 0) authorizationCell[0].innerHTML = "Fetching..."
+
+	new Ajax.Request("../port_3480/data_request", {
+		method: "get",
+		parameters: {
+			id: "lu_action",
+			serviceId: "urn:futzle-com:serviceId:CaddxNX584Security1",
+			action: "UserScan",
+			User: u,
+			MasterPIN: pin,
+			DeviceNum: device,
+			output_format: "json"
+		},
+		onSuccess: function (response) {
+			var jobId = response.responseText.evalJSON()["u:UserScanResponse"]["JobID"];
+			if (jobId == undefined)
+			{
+				if (pinCell.length > 0) pinCell[0].innerHTML = "Failed";
+				if (authorizationCell.length > 0) authorizationCell[0].innerHTML = "Failed"
+			}
+			else
+			{
+				if (pinCell.length > 0) pinCell[0].innerHTML = "Waiting...";
+				if (authorizationCell.length > 0) authorizationCell[0].innerHTML = "Waiting..."
+				waitForScanUserJob.delay(0.5, u, jobId, pinCell, authorizationCell, device);
+			}
+		}, 
+		onFailure: function () {
+			if (pinCell.length > 0) pinCell[0].innerHTML = "Failed";
+			if (authorizationCell.length > 0) authorizationCell[0].innerHTML = "Failed"
+		}
+	});
+}
+
+function waitForScanUserJob(u, jobId, pinCell, authorizationCell, device)
+{
+	new Ajax.Request("../port_3480/data_request", {
+		method: "get",
+		parameters: {
+			id: "jobstatus",
+			job: jobId,
+			output_format: "json"
+		},
+		onSuccess: function (response) {
+			var jobStatus = response.responseText.evalJSON()["status"];
+			if (jobStatus == 1 || jobStatus == 5)
+			{
+				// Repeat.  Hopefully not so many times as to overflow the stack.
+				waitForScanUserJob.delay(0.5, u, jobId, pinCell, authorizationCell, device);
+			}
+			else if (jobStatus == 2)
+			{
+				if (pinCell.length > 0) pinCell[0].innerHTML = "Failed";
+				if (authorizationCell.length > 0) authorizationCell[0].innerHTML = "Failed"
+			}
+			else if (jobStatus == 4)
+			{
+				if (pinCell.length > 0) pinCell[0].innerHTML = "Getting result";
+				if (authorizationCell.length > 0) authorizationCell[0].innerHTML = "Getting result"
+				getScanUserResult(u, pinCell, authorizationCell, device);
+			}
+		}, 
+		onFailure: function () {
+			if (pinCell.length > 0) pinCell[0].innerHTML = "Failed";
+			if (authorizationCell.length > 0) authorizationCell[0].innerHTML = "Failed"
+		}
+	});
+}
+
+function getScanUserResult(u, pinCell, authorizationCell, device)
+{
+	new Ajax.Request("../port_3480/data_request", {
+		method: "get",
+		parameters: {
+			id: "lr_UserScan",
+			user: u,
+			output_format: "json"
+		},
+		onSuccess: function (response) {
+			var userInfo = response.responseText.evalJSON();
+			if (userInfo == undefined)
+			{
+				if (pinCell.length > 0) pinCell[0].innerHTML = "Failed";
+				if (authorizationCell.length > 0) authorizationCell[0].innerHTML = "Failed"
+			}
+			else
+			{
+				// Success.  Populate.
+				if (pinCell.length > 0)
+				{
+					pinCell[0].innerHTML = userInfo.pin;
+				}
+				// TODO: finish.
+			}
+		}, 
+		onFailure: function () {
+			if (pinCell.length > 0) pinCell[0].innerHTML = "Failed";
+			if (authorizationCell.length > 0) authorizationCell[0].innerHTML = "Failed"
+		}
+	});
 }
 
