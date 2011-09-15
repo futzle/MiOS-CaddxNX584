@@ -510,8 +510,12 @@ function addManualZone(button, device)
  *
  **********/
 
+var existingUser;
+
 function usersTab(device)
 {
+	existingUser = new Array();
+	
 	var html = '';
 	html += '<p id="caddx_saveChanges" style="display:none; font-weight: bold; text-align: center;">Close dialog and press SAVE to commit changes.</p>';
 
@@ -530,72 +534,103 @@ function usersTab(device)
 			var configuration = response.responseText.evalJSON();
 			if (configuration == undefined)
 			{
-				$('caddx_users').innerHTML = 'Failed to get configuration';
+				usersTabWithConfiguration($('caddx_users'), false, false, false, undefined, device);
 			}
 			else
 			{
 				// Success.  Populate.
-				var getUserInformationEnabled = (configuration["capability"]["getUserInformationWithPin"] == "true");
-				var setUserCodeEnabled = (configuration["capability"]["setUserCodeWithPin"] == "true");
-				var setUserAuthorizationEnabled = (configuration["capability"]["setUserAuthorizationWithPin"] == "true");
-
-				var table = '';
-				if (getUserInformationEnabled || setUserCodeEnabled || setUserAuthorizationEnabled)
-				{
-					table += '<p>Master PIN <input id="caddx_masterPin" type="text" size="' + (configuration["pinLength"] - -1) + '"></input>';
-					if (getUserInformationEnabled) table += ' <input type="button" value="Get info" onclick="scanAllUsers(' + (configuration["pinLength"]-0) + ',' + device + ')"></input>';
-					table += '</p>';
-				}
-				table +='<table id="caddx_usertable" width="100%"><thead>';
-				table += '<th>User</th>';
-				table += '<th>Name</th>';
-				if (getUserInformationEnabled || setUserCodeEnabled) table += '<th>PIN</th>';
-				if (getUserInformationEnabled || setUserAuthorizationEnabled) table += '<th>Authorization</th>';
-				table += '<th>Action</th>';
-				table += '</thead><tbody>';
-
-				var u;
-				for (u = 1; u < 10; u++)  // Max user number? 10 on mine.
-				{
-					var username = get_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "User" + u, 0);
-					if (username != undefined && username != "")
-					{
-						table += '<tr class="caddx_user">';
-						table += '<td class="caddx_usernum">' + u + '</td>';
-						table += '<td><input type="text" class="caddx_username" onchange="TODO" value="' + username.escapeHTML() + '"></input></td>';
-						if (getUserInformationEnabled || setUserCodeEnabled)
-						{
-							table += '<td class="caddx_userpin">';
-							table += '</td>';
-						}
-
-						if (getUserInformationEnabled || setUserAuthorizationEnabled)
-						{
-							table += '<td class="caddx_userauthorization">';
-							table += '</td>';
-						}
-						table += '<td><input type="button" value="Hide" onclick="TODO"></input></td>';
-
-						table += '</tr>';
-					}
-				}
-
-				table += '</tbody></table>';
-
-				$('caddx_users').innerHTML = table;
+				usersTabWithConfiguration($('caddx_users'),
+					configuration["capability"]["getUserInformationWithPin"] == "true",
+					configuration["capability"]["setUserCodeWithPin"] == "true",
+					configuration["capability"]["setUserAuthorizationWithPin"] == "true",
+					configuration["pinLength"]-0,
+					device
+				);
 			}
 		}, 
 		onFailure: function () {
-			$('caddx_users').innerHTML = 'Failed to get configuration';
+			usersTabWithConfiguration($('caddx_users'), false, false, false, undefined, device);
 		}
 	});
 
 }
 
-function scanAllUsers(pinLength, device)
+
+function usersTabWithConfiguration(div, getUserInformationEnabled, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device)
 {
-	var pin = $F('caddx_masterPin');
-	if (pin.length != pinLength) return;
+	var table = '';
+
+	// Existing users.
+	table += '<div style="margin: 5px; padding: 5px; border: 1px grey solid;">';
+	table += '<p style="font-weight: bold; text-align: center;">Existing users</p>';
+	if (getUserInformationEnabled || setUserCodeEnabled || setUserAuthorizationEnabled)
+	{
+		table += '<p title="Master PIN is required to see and set existing PINs and authorizations">Master PIN <input id="caddx_masterPin" type="text" size="' + pinLength + '"></input>';
+		if (getUserInformationEnabled) table += ' <input type="button" value="Get info" onclick="scanAllUsers(' + setUserCodeEnabled + ',' + setUserAuthorizationEnabled + ',' + pinLength + ',' + device + ')"></input>';
+		table += '</p>';
+	}
+	table += '<table id="caddx_usertable" width="100%"><thead>';
+	table += '<th>User</th>';
+	table += '<th>Name</th>';
+	if (getUserInformationEnabled || setUserCodeEnabled) table += '<th>PIN</th>';
+	if (getUserInformationEnabled || setUserAuthorizationEnabled) table += '<th>Authorization</th>';
+	table += '<th>Action</th>';
+	table += '</thead><tbody>';
+
+	var u;
+	for (u = 1; u < 100; u++)  // Max user number? 10 on mine.
+	{
+		var username = get_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "User" + u, 0);
+		if (username != undefined && username != "")
+		{
+			table += '<tr class="caddx_user">';
+			table += '<td class="caddx_usernum">' + u + '</td>';
+			table += '<td><input size="17" type="text" class="caddx_username" onchange="TODO" value="' + username.escapeHTML() + '"></input></td>';
+			if (u < 98) // Magical user numbers are up in this range, and don't have PINs or authorizations.
+			{
+				if (getUserInformationEnabled || setUserCodeEnabled)
+				{
+					table += '<td class="caddx_userpin">';
+					table += '</td>';
+				}
+	
+				if (getUserInformationEnabled || setUserAuthorizationEnabled)
+				{
+					table += '<td class="caddx_userauthorization">';
+					table += '</td>';
+				}
+				table += '<td><input type="button" value="Hide" onclick="TODO"></input></td>';
+			}
+			table += '</tr>';
+			existingUser[u] = true;
+		}
+	}
+
+	table += '</tbody></table>';
+	table += '</div>';
+
+	// Let user add a user manually.
+	table += '<div style="margin: 5px; padding: 5px; border: 1px grey solid;">';
+	table += '<p style="font-weight: bold; text-align: center;">Manually add user</p>';
+	table += '<table width="100%">';
+	table += '<thead><th>User</th><th>Name</th><th>Action</th></thead>';
+	table += '<tbody>';
+	table += '<tr>';
+	table += '<td><input id="caddx_user_manual" type="text" size="3"></input></td>';
+	table += '<td><input id="caddx_userName_manual" type="text" size="17"></input></td>';
+	table += '<td><input type="button" value="Add" onclick="addManualUser(this,' + device + ')"></input></td>';
+	table += '</tr>';
+	table += '</tbody>';
+	table += '</table>';
+	table += '</div>';
+
+	div.innerHTML = table;
+}
+
+function scanAllUsers(setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device)
+{
+	var masterPin = $F('caddx_masterPin');
+	if (masterPin.length != pinLength) return;
 
 	var stagger = 0;  // Delay requests a bit to prevent overload of serial line.
 	var userTable = $('caddx_usertable');
@@ -606,11 +641,11 @@ function scanAllUsers(pinLength, device)
 		var u = userList[userObjectIterator].firstChild.data;
 		var pinCell = userList[userObjectIterator].parentNode.select('.caddx_userpin');
 		var authorizationCell = userList[userObjectIterator].parentNode.select('.caddx_userauthorization');
-		scanUser.delay(0.5 * stagger++, u, pin, pinCell, authorizationCell, device)
+		scanUser.delay(0.5 * stagger++, u, masterPin, pinCell, authorizationCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device);
 	}
 }
 
-function scanUser(u, pin, pinCell, authorizationCell, device)
+function scanUser(u, masterPin, pinCell, authorizationCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device)
 {
 	// if (pinCell.length > 0) pinCell[0].innerHTML = "Fetching...";
 	// if (authorizationCell.length > 0) authorizationCell[0].innerHTML = "Fetching..."
@@ -622,7 +657,7 @@ function scanUser(u, pin, pinCell, authorizationCell, device)
 			serviceId: "urn:futzle-com:serviceId:CaddxNX584Security1",
 			action: "UserScan",
 			User: u,
-			MasterPIN: pin,
+			MasterPIN: masterPin,
 			DeviceNum: device,
 			output_format: "json"
 		},
@@ -637,7 +672,7 @@ function scanUser(u, pin, pinCell, authorizationCell, device)
 			{
 				if (pinCell.length > 0) pinCell[0].innerHTML = "Waiting...";
 				if (authorizationCell.length > 0) authorizationCell[0].innerHTML = "Waiting..."
-				waitForScanUserJob.delay(0.5, u, jobId, pinCell, authorizationCell, device);
+				waitForScanUserJob.delay(0.5, u, jobId, pinCell, authorizationCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device);
 			}
 		}, 
 		onFailure: function () {
@@ -647,7 +682,7 @@ function scanUser(u, pin, pinCell, authorizationCell, device)
 	});
 }
 
-function waitForScanUserJob(u, jobId, pinCell, authorizationCell, device)
+function waitForScanUserJob(u, jobId, pinCell, authorizationCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device)
 {
 	new Ajax.Request("../port_3480/data_request", {
 		method: "get",
@@ -661,7 +696,7 @@ function waitForScanUserJob(u, jobId, pinCell, authorizationCell, device)
 			if (jobStatus == 1 || jobStatus == 5)
 			{
 				// Repeat.  Hopefully not so many times as to overflow the stack.
-				waitForScanUserJob.delay(0.5, u, jobId, pinCell, authorizationCell, device);
+				waitForScanUserJob.delay(0.5, u, jobId, pinCell, authorizationCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device);
 			}
 			else if (jobStatus == 2)
 			{
@@ -672,7 +707,7 @@ function waitForScanUserJob(u, jobId, pinCell, authorizationCell, device)
 			{
 				if (pinCell.length > 0) pinCell[0].innerHTML = "Getting result";
 				if (authorizationCell.length > 0) authorizationCell[0].innerHTML = "Getting result"
-				getScanUserResult(u, pinCell, authorizationCell, device);
+				getScanUserResult(u, pinCell, authorizationCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device);
 			}
 		}, 
 		onFailure: function () {
@@ -682,7 +717,7 @@ function waitForScanUserJob(u, jobId, pinCell, authorizationCell, device)
 	});
 }
 
-function getScanUserResult(u, pinCell, authorizationCell, device)
+function getScanUserResult(u, pinCell, authorizationCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device)
 {
 	new Ajax.Request("../port_3480/data_request", {
 		method: "get",
@@ -715,3 +750,20 @@ function getScanUserResult(u, pinCell, authorizationCell, device)
 	});
 }
 
+// Add a user manually.
+function addManualUser(button, device)
+{
+	var u = $F("caddx_user_manual");
+	var name = $F("caddx_userName_manual");
+	if (u > 0 && u < 100 && !existingUser[u] && name != "")
+	{
+		button.disable();
+		$("caddx_user_manual").disable();
+		$("caddx_userName_manual").disable();
+		set_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "User" + u, name, 0);
+		// Feedback.
+		button.setValue("Added");
+		$('caddx_saveChanges').show();
+	}
+
+}
