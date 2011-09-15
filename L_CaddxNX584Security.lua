@@ -473,9 +473,13 @@ end
 
 -- processPartitionStatusMessage(message)
 -- Update the state of a child device upon receipt of a 0x06 Partition Status message.
--- message: The body of the message.  The partition must already be configured.
+-- message: The body of the message.
 function processPartitionStatusMessage(message)
 	local partition = string.byte(string.sub(message,1)) + 1
+	if (not PARTITION_VALID[partition]) then
+		if (LOG_DEBUG) then luup.log(string.format("Ignoring invalid partition %d", p)) end
+		return nil
+	end
 	PARTITION_STATUS[partition]["isArmed"] = bitMask(string.byte(string.sub(message,2)), 64)
 	PARTITION_STATUS[partition]["isPartial"] = bitMask(string.byte(string.sub(message,4)), 4)
 	PARTITION_STATUS[partition]["isSiren"] = bitMask(string.byte(string.sub(message,3)), 2)
