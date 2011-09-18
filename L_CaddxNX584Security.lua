@@ -34,7 +34,7 @@ INCOMING_EXPECTING_CHECKSUM1 = 3   -- Received all bytes, now need first checksu
 INCOMING_EXPECTING_CHECKSUM2 = 4   -- Received first checksum byte
 INCOMING_EXPECTING_MESSAGE = 5	 -- Receiving message body bytes
 
-LOG_DEBUG = true -- Debug I/O with interface.
+LOG_DEBUG = false -- Debug I/O with interface.
 MAX_RETRIES = 3 -- This many failures indicates the system has failed.
 
 --
@@ -88,6 +88,10 @@ function caddxInitialize(deviceId)
 
 	-- Remember parent device ID.
 	ROOT_DEVICE = deviceId;
+
+	if (luup.variable_get(ALARM_SERVICEID, "Debug", ROOT_DEVICE) ~= "1") then
+		LOG_DEBUG = true;
+	end
 
 	-- Incoming byte state machine initialization.
 	RECEIVE_STATE = INCOMING_EXPECTING_START

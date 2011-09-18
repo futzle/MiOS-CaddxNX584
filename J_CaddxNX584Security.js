@@ -10,6 +10,15 @@ function configurationTab(device)
 	html += '<p id="caddx_saveChanges" style="display:none; font-weight: bold; text-align: center;">Close dialog and press SAVE to commit changes.</p>';
 
 	// Configuration of panel.
+	var alwaysConfigure = '';
+	var debugEnabled = (get_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "Debug", 0) == "1");
+	alwaysConfigure += '<tr title="Verbose debugging messages to Luup Log">';
+	alwaysConfigure += '<td>Debug to Luup log</td>';
+	alwaysConfigure += '<td><input type="checkbox" onclick="set_device_state(' + device + ', \'urn:futzle-com:serviceId:CaddxNX584Security1\', \'Debug\', $F(this) ? \'1\' : \'\', 0); $(\'caddx_saveChanges\').show()" ';
+	if (debugEnabled) alwaysConfigure += 'checked="checked"';
+	alwaysConfigure += '></input></td>';
+	alwaysConfigure += '</tr>';
+
 	html += '<div id="caddx_configuration">Getting configuration...</div>';
 	set_panel_html(html);
 
@@ -23,12 +32,15 @@ function configurationTab(device)
 			var configuration = response.responseText.evalJSON();
 			if (configuration == undefined)
 			{
-				$('caddx_configuration').innerHTML = 'Failed to get configuration';
+				$('caddx_configuration').innerHTML = '<table width="100%"><tbody>' + alwaysConfigure + '</table>';
 			}
 			else
 			{
 				// Success.  Populate.
 				var table ='<table width="100%"><tbody>';
+
+				table += alwaysConfigure;
+
 				table += '<tr>';
 				table += '<td>PIN length*</td>';
 				table += '<td>' + configuration["pinLength"] + '</td>';
@@ -102,7 +114,7 @@ function configurationTab(device)
 			}
 		}, 
 		onFailure: function () {
-			$('caddx_configuration').innerHTML = 'Failed to get configuration';
+			$('caddx_configuration').innerHTML = '<table width="100%"><tbody>' + alwaysConfigure + '</table>';
 		}
 	});
 }
@@ -565,8 +577,8 @@ function usersTabWithConfiguration(div, getUserInformationEnabled, setUserCodeEn
 	table += '<p style="font-weight: bold; text-align: center;">Existing users</p>';
 	if (getUserInformationEnabled || setUserCodeEnabled || setUserAuthorizationEnabled)
 	{
-		table += '<p title="Master PIN is required to see and set existing PINs and authorizations">Master PIN <input id="caddx_masterPin" type="text" size="' + pinLength + '"></input>';
-		if (getUserInformationEnabled) table += ' <input type="button" value="Get info" onclick="scanAllUsers(' + setUserCodeEnabled + ',' + setUserAuthorizationEnabled + ',' + pinLength + ',' + device + ')"></input>';
+		table += '<p title="Master PIN is required to see and set existing PINs and authorizations">Master PIN: <input id="caddx_existingUsersMasterPin" type="text" size="' + pinLength + '"></input>';
+		if (getUserInformationEnabled) table += ' <input type="button" value="Get info" onclick="scanAllExistingUsers(' + setUserCodeEnabled + ',' + setUserAuthorizationEnabled + ',' + pinLength + ',' + device + ')"></input>';
 		table += '</p>';
 	}
 	table += '<table id="caddx_usertable" width="100%"><thead>';
@@ -585,7 +597,7 @@ function usersTabWithConfiguration(div, getUserInformationEnabled, setUserCodeEn
 		{
 			table += '<tr class="caddx_user">';
 			table += '<td class="caddx_usernum">' + u + '</td>';
-			table += '<td><input size="17" type="text" class="caddx_username" onchange="TODO" value="' + username.escapeHTML() + '"></input></td>';
+			table += '<td><input size="17" type="text" class="caddx_username" onchange="nameUser(' + u + ',this,' + device + ')" value="' + username.escapeHTML() + '"></input></td>';
 			if (u < 98) // Magical user numbers are up in this range, and don't have PINs or authorizations.
 			{
 				if (getUserInformationEnabled || setUserCodeEnabled)
@@ -599,7 +611,7 @@ function usersTabWithConfiguration(div, getUserInformationEnabled, setUserCodeEn
 					table += '<td class="caddx_userauthorization">';
 					table += '</td>';
 				}
-				table += '<td><input type="button" value="Hide" onclick="TODO"></input></td>';
+				table += '<td><input type="button" value="Hide" onclick="hideExistingUser(' + u + ',this,' + device + ')"></input></td>';
 			}
 			table += '</tr>';
 			existingUser[u] = true;
@@ -608,6 +620,19 @@ function usersTabWithConfiguration(div, getUserInformationEnabled, setUserCodeEn
 
 	table += '</tbody></table>';
 	table += '</div>';
+
+	// Scan button for scanning undiscovered users.
+	if (getUserInformationEnabled)
+	{
+		table += '<div style="margin: 5px; padding: 5px; border: 1px grey solid;">';
+		table += '<p style="font-weight: bold; text-align: center;">Scan users</p>';
+		table += '<p>';
+		table += 'Master PIN: <input id="caddx_newUsersMasterPin" type="text" size="' + pinLength + '"></input>';
+		table += ' Maximum user: <input type="text" id="caddx_maxUser" size="3"></input>';
+		table += ' <input type="button" onclick="scanNewUsers($F(\'caddx_maxUser\'),' + pinLength + ',' + device + ')" value="Scan"></input></p>';
+		table += '<div id="userScanOutput"></div>';
+		table += '</div>';
+	}
 
 	// Let user add a user manually.
 	table += '<div style="margin: 5px; padding: 5px; border: 1px grey solid;">';
@@ -627,9 +652,9 @@ function usersTabWithConfiguration(div, getUserInformationEnabled, setUserCodeEn
 	div.innerHTML = table;
 }
 
-function scanAllUsers(setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device)
+function scanAllExistingUsers(setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device)
 {
-	var masterPin = $F('caddx_masterPin');
+	var masterPin = $F('caddx_existingUsersMasterPin');
 	if (masterPin.length != pinLength) return;
 
 	var stagger = 0;  // Delay requests a bit to prevent overload of serial line.
@@ -642,6 +667,38 @@ function scanAllUsers(setUserCodeEnabled, setUserAuthorizationEnabled, pinLength
 		var pinCell = userList[userObjectIterator].parentNode.select('.caddx_userpin');
 		var authorizationCell = userList[userObjectIterator].parentNode.select('.caddx_userauthorization');
 		scanUser.delay(0.5 * stagger++, u, masterPin, pinCell, authorizationCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device);
+	}
+}
+
+function scanNewUsers(maxUser, pinLength, device)
+{
+	if (maxUser == "") return;
+	var masterPin = $F('caddx_newUsersMasterPin');
+	if (masterPin.length != pinLength) return;
+
+	var resultDiv = $("userScanOutput");
+	while (resultDiv.hasChildNodes()) { resultDiv.removeChild(resultDiv.firstChild); }
+	var resultTable = resultDiv.appendChild(document.createElement("table"));
+	resultTable.setAttribute("width", "100%");
+	var resultThead = resultTable.appendChild(document.createElement("thead"));
+	resultThead.innerHTML = "<th>User</th><th>Name</th><th>PIN</th><th>Authorization</th><th>Action</th>";
+	var resultTbody = resultTable.appendChild(document.createElement("tbody"));
+
+	var u;
+	var stagger = 0;  // Delay requests a bit to prevent overload of serial line.
+	for (u = 1; u <= maxUser-0; u++)
+	{
+		if (existingUser[u]) continue;
+		var row = resultTbody.insertRow(-1);
+		var html = '';
+		html += '<td>' + u + '</td>';
+		html += '<td><input type="text" class="caddx_username" size="17" value="User ' + u + '"></td>';
+		html += '<td class="caddx_userpin">Scanning...</td>';
+		html += '<td class="caddx_userauthorization">Scanning...</td>';
+		html += '<td><input type="button" Value="Add" onclick="addScannedUser(' + u + ',this,' + device + ')"></input></td>';
+		row.innerHTML = html;
+		// Request the user information.
+		scanUser.delay(0.5 * stagger++, u, masterPin, row.select(".caddx_userpin"), row.select(".caddx_userauthorization"), false, false, pinLength, device);
 	}
 }
 
@@ -738,9 +795,61 @@ function getScanUserResult(u, pinCell, authorizationCell, setUserCodeEnabled, se
 				// Success.  Populate.
 				if (pinCell.length > 0)
 				{
-					pinCell[0].innerHTML = userInfo.pin;
+					if (false && setUserCodeEnabled)
+					{
+						// TO DO.
+					}
+					else
+					{
+						pinCell[0].innerHTML = userInfo.pin;
+					}
 				}
-				// TODO: finish.
+				if (authorizationCell.length > 0)
+				{
+					if (false && setUserAuthorizationEnabled)
+					{
+						// TO DO.
+					}
+					else
+					{
+						var html = '';
+						if (userInfo.authorization.master == "true")
+						{
+							html += 'Master';
+						}
+						if (userInfo.authorization.arm == "all")
+						{
+							if (html != '') html += '; ';
+							html += 'Arm';
+						}
+						if (userInfo.authorization.arm == "closing")
+						{
+							if (html != '') html += '; ';
+							html += 'Arm (closing)';
+						}
+						if (userInfo.authorization.disarm == "true")
+						{
+							if (html != '') html += '; ';
+							html += 'Disarm';
+						}
+						if (userInfo.authorization.report == "true")
+						{
+							if (html != '') html += '; ';
+							html += 'Report';
+						}
+						if (html != '') html = '<div>' + html + '</div>';
+						if (userInfo.authorization.outputEnable)
+						{
+							html += '<div>Output ' + userinfo.authorization.outputEnable + '</div>';
+						}
+						if (userInfo.partitions)
+						{
+							html += '<div>Partition ' + userInfo.partitions + '</div>';
+						}
+						html += '';
+						authorizationCell[0].innerHTML = html;
+					}
+				}
 			}
 		}, 
 		onFailure: function () {
@@ -748,6 +857,35 @@ function getScanUserResult(u, pinCell, authorizationCell, setUserCodeEnabled, se
 			if (authorizationCell.length > 0) authorizationCell[0].innerHTML = "Failed"
 		}
 	});
+}
+
+// Rename an existing user
+function nameUser(u, text, device)
+{
+	set_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "User" + u, $F(text), 0);
+	$('caddx_saveChanges').show();
+}
+
+// Delete variables for an existing user when the user clicks the "Hide" button.
+function hideExistingUser(u, button, device)
+{
+	button.disable();
+	button.parentNode.parentNode.select('.caddx_username')[0].disable();
+	// Can't actually delete.  Closest is to set to empty string.
+	set_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "User" + u, "", 0);
+	button.setValue("Hidden");
+	$('caddx_saveChanges').show();
+}
+
+// Add a user from a scan.
+function addScannedUser(u, button, device)
+{
+	var nameInput = button.parentNode.parentNode.select('.caddx_username')[0];
+	button.disable();
+	nameInput.disable();
+	set_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "User" + u, $F(nameInput), 0);
+	button.setValue("Added");
+	$('caddx_saveChanges').show();
 }
 
 // Add a user manually.
