@@ -832,6 +832,11 @@ function getScanUserResult(u, pinCell, authorizationCell, setUserCodeEnabled, se
 							if (html != '') html += '; ';
 							html += 'Disarm';
 						}
+						if (userInfo.authorization.bypass == "true")
+						{
+							if (html != '') html += '; ';
+							html += 'Bypass';
+						}
 						if (userInfo.authorization.report == "true")
 						{
 							if (html != '') html += '; ';

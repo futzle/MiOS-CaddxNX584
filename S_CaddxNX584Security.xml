@@ -5,6 +5,10 @@
     <minor>0</minor>
   </specVersion>
   <serviceStateTable>
+    <stateVariable allowRepeats="yes">
+      <name>LastEventLog</name>
+      <dataType>string</dataType>
+    </stateVariable>
   </serviceStateTable>
   <actionList>
     <action>

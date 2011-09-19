@@ -28,9 +28,37 @@
                 {
                     "id": "1",
                     "type": "info"
-                },
+                }
             ],
             "Control": [
+		{
+			"ControlGroup": "1",
+			"ControlHeader": "1",
+			"ControlType": "label",
+			"Label": {
+				"lang_tag": "lastlog",
+				"text": "Last Log:",
+			},
+			"Display": {
+				"Top": "10",
+				"Left": "10",
+				"Width": "50",
+				"Height": "20",
+			}
+		},
+		{
+			"ControlGroup": "1",
+			"ControlHeader": "1",
+			"ControlType": "variable",
+			"Display": {
+				"Top": "10",
+				"Left": "80",
+				"Width": "150",
+				"Height": "20",
+				"Service": "urn:futzle-com:serviceId:CaddxNX584Security1",
+				"Variable": "LastLogEvent"
+			}
+		}
             ]
         },
 	{

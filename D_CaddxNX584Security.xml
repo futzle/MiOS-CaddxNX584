@@ -26,6 +26,13 @@
         <eventSubURL>/upnp/event/CaddxNX584Security1</eventSubURL>
         <SCPDURL>S_CaddxNX584Security.xml</SCPDURL>
       </service>
+      <service>
+        <serviceType>urn:schemas-micasaverde-com:service:HaDevice:1</serviceType>
+        <serviceId>urn:micasaverde-com:serviceId:HaDevice1</serviceId>
+        <controlURL>/upnp/control/HaDevice1</controlURL>
+        <eventSubURL>/upnp/event/HaDevice1</eventSubURL>
+        <SCPDURL>S_HaDevice1.xml</SCPDURL>
+      </service>
     </serviceList>
     <implementationList>
       <implementationFile>I_CaddxNX584Security.xml</implementationFile>

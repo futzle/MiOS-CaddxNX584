@@ -37,6 +37,77 @@ INCOMING_EXPECTING_MESSAGE = 5	 -- Receiving message body bytes
 LOG_DEBUG = false -- Debug I/O with interface.
 MAX_RETRIES = 3 -- This many failures indicates the system has failed.
 
+LOG_MESSAGE_ZONE = {
+	[0] = "Alarm (Zone %d Partition %d)",
+	[1] = "Alarm restore (Zone %d Partition %d)",
+	[2] = "Bypass (Zone %d Partition %d)",
+	[3] = "Bypass restore (Zone %d Partition %d)",
+	[4] = "Tamper (Zone %d Partition %d)",
+	[5] = "Tamper restore (Zone %d Partition %d)",
+	[6] = "Trouble (Zone %d Partition %d)",
+	[7] = "Trouble restore (Zone %d Partition %d)",
+	[8] = "TX low battery (Zone %d Partition %d)",
+	[9] = "TX low battery restore (Zone %d Partition %d)",
+	[10] = "Zone lost (Zone %d Partition %d)",
+	[11] = "Zone lost restore (Zone %d Partition %d)",
+	[12] = "Start of cross time (Zone %d Partition %d)",
+}
+LOG_MESSAGE_PANEL = {
+	[17] = "Special expansion event",
+	[18] = "Duress (Partition %d)",
+	[19] = "Manual fire (Partition %d)",
+	[20] = "Auxiliary 2 Panic (Partition %d)",
+	[22] = "Panic (Partition %d)",
+	[23] = "Keypad tamper (Partition %d)",
+	[34] = "Telephone fault",
+	[35] = "Telephone fault restore",
+	[38] = "Fail to communicate",
+	[39] = "Log full",
+	[44] = "Auto test",
+	[45] = "Start program",
+	[46] = "End program",
+	[47] = "Start download",
+	[48] = "End download",
+	[50] = "Ground fault",
+	[51] = "Ground fault restore",
+	[52] = "Manual test",
+	[54] = "Start of listen in",
+	[55] = "Technician on site",
+	[56] = "Technician left",
+	[56] = "Control power up",
+	[123] = "Begin walk-test",
+	[124] = "End walk-test",
+	[125] = "Re-exit (Partition %d)",
+	[127] = "Data lost",
+}
+LOG_MESSAGE_DEVICE = {
+	[24] = "Control box tamper (Device %d)",
+	[25] = "Control box tamper Restore (Device %d)",
+	[26] = "AC fail (Device %d)",
+	[27] = "AC fail restore (Device %d)",
+	[28] = "Low battery (Device %d)",
+	[29] = "Low battery restore (Device %d)",
+	[30] = "Over-current (Device %d)",
+	[31] = "Over-current restore (Device %d)",
+	[32] = "Siren tamper (Device %d)",
+	[33] = "Siren tamper restore (Device %d)",
+	[36] = "Expander trouble (Device %d)",
+	[37] = "Expander trouble restore (Device %d)",
+}
+LOG_MESSAGE_USER = {
+	[40] = "Opening (User %d Partition %d)",
+	[41] = "Closing (User %d Partition %d)",
+	[42] = "Exit error (User %d Partition %d)",
+	[43] = "Recent closing (User %d Partition %d)",
+	[49] = "Cancel (User %d Partition %d)",
+	[53] = "Closed with zones bypassed (User %d Partition %d)",
+	[120] = "First to open (User %d Partition %d)",
+	[121] = "Last to close (User %d Partition %d)",
+	[121] = "Last to close (User %d Partition %d)",
+	[122] = "PIN entered with bit 7 set(User %d Partition %d)",
+	[123] = "Output trip (User %d)",
+}
+
 --
 -- Utility functions for bitwise operations.
 --
@@ -399,6 +470,9 @@ function getSystemStatus(deviceId)
 				end
 				luup.log(string.format("PIN length is %d", CONFIGURATION_PIN_LENGTH))
 
+				-- Set device variables that are encoded in this message.
+				handleSystemStatusMessage(deviceId, message)
+
 				return 0
 			end
 		}
@@ -671,15 +745,51 @@ function handlePartitionsSnapshotMessage(deviceId, message)
 	return 0
 end
 
-function handleSystemStatusMessage()
+function handleSystemStatusMessage(deviceId, message)
 	if (LOG_DEBUG) then luup.log("Handling message: 0x08 System Status") end
-	-- Anything to do? We shouldn't be getting this message spontaneously, should we?
+
+	-- Battery level is only binary.  Fake a continuum.
+	luup.variable_set("urn:micasaverde-com:serviceId:HaDevice1", "BatteryLevel", bitMask(string.byte(string.sub(message,3)), 64) and 10 or 100, deviceId)
+
 	return 0
 end
 
-function handleLogEventMessage()
+-- handleLogEventMessage(deviceId, message)
+-- Note the most recent log event sent by the panel.
+function handleLogEventMessage(deviceId, message)
 	if (LOG_DEBUG) then luup.log("Handling message: 0x0a Log Event") end
-	-- To do.
+
+	local messageNumber = string.byte(string.sub(message, 3)) % 127
+	local variableNumber = string.byte(string.sub(message, 4))
+	local partitionNumber = string.byte(string.sub(message, 5))
+	local month = string.byte(string.sub(message, 6))
+	local date = string.byte(string.sub(message, 7))
+	local hour = string.byte(string.sub(message, 8))
+	local minute = string.byte(string.sub(message, 9))
+
+	local messageText = "Unknown message";
+	if (LOG_MESSAGE_ZONE[messageNumber]) then
+		messageText = string.format(LOG_MESSAGE_ZONE[messageNumber], variableNumber+1, partitionNumber+1)
+		luup.variable_set(ALARM_SERVICEID, "LastLogEventZone", variableNumber+1, deviceId)
+		luup.variable_set(ALARM_SERVICEID, "LastLogEventPartition", partitionNumber+1, deviceId)
+	elseif (LOG_MESSAGE_PANEL[messageNumber]) then
+		messageText = string.format(LOG_MESSAGE_PANEL[messageNumber], partitionNumber+1)
+		luup.variable_set(ALARM_SERVICEID, "LastLogEventPartition", partitionNumber+1, deviceId)
+	elseif (LOG_MESSAGE_DEVICE[messageNumber]) then
+		messageText = string.format(LOG_MESSAGE_DEVICE[messageNumber], variableNumber, partitionNumber+1)
+		luup.variable_set(ALARM_SERVICEID, "LastLogEventDevice", variableNumber, deviceId)
+		luup.variable_set(ALARM_SERVICEID, "LastLogEventPartition", partitionNumber+1, deviceId)
+	elseif (LOG_MESSAGE_USER[messageNumber]) then
+		messageText = string.format(LOG_MESSAGE_USER[messageNumber], variableNumber+1, partitionNumber+1)
+		luup.variable_set(ALARM_SERVICEID, "LastLogEventUser", variableNumber+1, deviceId)
+		luup.variable_set(ALARM_SERVICEID, "LastLogEventPartition", partitionNumber+1, deviceId)
+	end
+
+	luup.variable_set(ALARM_SERVICEID, "LastLogEventTime", string.format("%d-%d %d:%d", month, date, hour, minute), deviceId)
+	luup.variable_set(ALARM_SERVICEID, "LastLogEvent", messageText, deviceId)
+	if (LOG_DEBUG) then luup.log(string.format("Log message: %d %s", messageNumber, messageText)) end
+	luup.variable_set(ALARM_SERVICEID, "LastLogEventID", messageNumber, deviceId)
+
 	return 0
 end
 
@@ -1103,6 +1213,9 @@ function getUserInformationJson(u)
 	end
 	if (u.authorization.master ~= nil) then
 		table.insert(authorization, "\"master\": \"true\"");
+	end
+	if (u.authorization.bypass ~= nil) then
+		table.insert(authorization, "\"bypass\": \"true\"");
 	end
 	if (u.authorization.report ~= nil) then
 		table.insert(authorization, "\"report\": \"true\"");
