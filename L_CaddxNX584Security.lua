@@ -160,7 +160,7 @@ function caddxInitialize(deviceId)
 	-- Remember parent device ID.
 	ROOT_DEVICE = deviceId
 
-	if (luup.variable_get(ALARM_SERVICEID, "Debug", ROOT_DEVICE) ~= "1") then
+	if (luup.variable_get(ALARM_SERVICEID, "Debug", ROOT_DEVICE) == "1") then
 		LOG_DEBUG = true
 	end
 
