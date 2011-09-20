@@ -158,10 +158,10 @@ function caddxInitialize(deviceId)
 	luup.io.intercept()
 
 	-- Remember parent device ID.
-	ROOT_DEVICE = deviceId;
+	ROOT_DEVICE = deviceId
 
 	if (luup.variable_get(ALARM_SERVICEID, "Debug", ROOT_DEVICE) ~= "1") then
-		LOG_DEBUG = true;
+		LOG_DEBUG = true
 	end
 
 	-- Incoming byte state machine initialization.
@@ -767,7 +767,7 @@ function handleLogEventMessage(deviceId, message)
 	local hour = string.byte(string.sub(message, 8))
 	local minute = string.byte(string.sub(message, 9))
 
-	local messageText = "Unknown message";
+	local messageText = "Unknown message"
 	if (LOG_MESSAGE_ZONE[messageNumber]) then
 		messageText = string.format(LOG_MESSAGE_ZONE[messageNumber], variableNumber+1, partitionNumber+1)
 		luup.variable_set(ALARM_SERVICEID, "LastLogEventZone", variableNumber+1, deviceId)
@@ -1206,19 +1206,19 @@ end
 function getUserInformationJson(u)
 	local authorization = {}
 	if (u.authorization.arm ~= nil) then
-		table.insert(authorization, "\"arm\": \"" .. u.authorization.arm .. "\"");
+		table.insert(authorization, "\"arm\": \"" .. u.authorization.arm .. "\"")
 	end
 	if (u.authorization.disarm ~= nil) then
-		table.insert(authorization, "\"disarm\": \"true\"");
+		table.insert(authorization, "\"disarm\": \"true\"")
 	end
 	if (u.authorization.master ~= nil) then
-		table.insert(authorization, "\"master\": \"true\"");
+		table.insert(authorization, "\"master\": \"true\"")
 	end
 	if (u.authorization.bypass ~= nil) then
-		table.insert(authorization, "\"bypass\": \"true\"");
+		table.insert(authorization, "\"bypass\": \"true\"")
 	end
 	if (u.authorization.report ~= nil) then
-		table.insert(authorization, "\"report\": \"true\"");
+		table.insert(authorization, "\"report\": \"true\"")
 	end
 	if (u.authorization.outputEnable ~= nil) then
 		local outputEnable = {}
@@ -1227,7 +1227,7 @@ function getUserInformationJson(u)
 				table.insert(outputEnable, o)
 			end
 		end
-		table.insert(authorization, "\"outputEnable\": \"" .. table.concat(outputEnable, ",") .. "\"");
+		table.insert(authorization, "\"outputEnable\": \"" .. table.concat(outputEnable, ",") .. "\"")
 	end
 	return "{" ..
 		"\"pin\": \"" .. u.pin .. "\"," ..
@@ -1271,7 +1271,7 @@ function callbackHandler(lul_request, lul_parameters, lul_outputformat)
 			local u = tonumber(lul_parameters.user)
 			return getUserInformationJson(USER_SCAN[u])
 		elseif (lul_request == "GetConfiguration") then
-			return getConfigurationJson();
+			return getConfigurationJson()
 		end
 	end
 end
