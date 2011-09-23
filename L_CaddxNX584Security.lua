@@ -555,7 +555,7 @@ end
 function processPartitionStatusMessage(message)
 	local partition = string.byte(string.sub(message,1)) + 1
 	if (not PARTITION_VALID[partition]) then
-		if (LOG_DEBUG) then luup.log(string.format("Ignoring invalid partition %d", p)) end
+		if (LOG_DEBUG) then luup.log(string.format("Ignoring invalid partition %d", partition)) end
 		return nil
 	end
 	PARTITION_STATUS[partition]["isArmed"] = bitMask(string.byte(string.sub(message,2)), 64)
