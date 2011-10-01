@@ -26,6 +26,7 @@ function configurationTab(device)
 		method: "get",
 		parameters: {
 			id: "lr_GetConfiguration",
+			rand: Math.random(),
 			output_format: "json"
 		},
 		onSuccess: function (response) {
@@ -50,6 +51,12 @@ function configurationTab(device)
 				table += '<td>Zone name*</td>';
 				table += '<td><input type="checkbox" disabled="disabled" ';
 				if (configuration["capability"]["zoneName"] == "true") table += 'checked="checked"';
+				table += '></input></td></tr>';
+
+				table += '<tr title="Get event history from the panel">';
+				table += '<td>Get log event*</td>';
+				table += '<td><input type="checkbox" disabled="disabled" ';
+				if (configuration["capability"]["logEvent"] == "true") table += 'checked="checked"';
 				table += '></input></td></tr>';
 
 				table += '<tr title="Set the panel\'s date and time from MiOS">';
@@ -137,12 +144,12 @@ function zoneTab(device)
 	html += '<div style="margin: 5px; padding: 5px; border: 1px grey solid;">';
 	html += '<p style="font-weight: bold; text-align: center;">Existing zones</p>';
 	html += '<table width="100%">';
-	html += '<thead><th>Zone</th><th>Name</th><th>Room</th><th>Type</th><th>Action</th></thead>';
+	html += '<thead><th>Zone</th><th>Name</th><th>Room</th><th>Info</th><th>Type</th><th>Action</th></thead>';
 	html += '<tbody>';
 
 	// Populate table with existing known zones.
 	var z;
-	for (z = 1; z <= 48; z++)
+	for (z = 1; z <= 128; z++)
 	{
 		var type = get_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "Zone" + z + "Type", 0);
 		// Empty string is equivalent to deleted.
@@ -177,6 +184,7 @@ function zoneTab(device)
 			html += '<td>' + z + '</td>';
 			html += '<td>' + zoneName.escapeHTML() + '</td>';
 			html += '<td>' + zoneRoom.escapeHTML() + '</td>';
+			html += '<td id="caddx_zoneInfo' + z + '"></td>';
 			// Find nicer names for the standard sensor types.
 			if (type == "D_MotionSensor1.xml") { type = "Motion"; }
 			if (type == "D_SmokeSensor1.xml") { type = "Smoke"; }
@@ -222,6 +230,102 @@ function zoneTab(device)
 	html += '</div>';
 
 	set_panel_html(html);
+
+	var stagger = 0;  // Delay requests a bit to prevent overload of serial line.
+	for (z = 1; z <= 128; z++)
+	{
+		infoCell = $("caddx_zoneInfo"+z);
+		if (infoCell)
+		{
+			scanExistingZone.delay(0.5 * stagger++, z, infoCell, device);
+		}
+	}
+}
+
+function scanExistingZone(z, infoCell, device)
+{
+	new Ajax.Request("../port_3480/data_request", {
+		method: "get",
+		parameters: {
+			id: "lu_action",
+			serviceId: "urn:futzle-com:serviceId:CaddxNX584Security1",
+			action: "ZoneScan",
+			Zone: z,
+			DeviceNum: device,
+			output_format: "json"
+		},
+		onSuccess: function (response) {
+			var jobId = response.responseText.evalJSON()["u:ZoneScanResponse"]["JobID"];
+			if (jobId == undefined)
+			{
+			}
+			else
+			{
+				waitForScanExistingZoneJob.delay(0.5, z, jobId, infoCell, device);
+			}
+		}, 
+		onFailure: function () {
+		}
+	});
+}
+
+function waitForScanExistingZoneJob(z, jobId, infoCell, device)
+{
+	new Ajax.Request("../port_3480/data_request", {
+		method: "get",
+		parameters: {
+			id: "jobstatus",
+			job: jobId,
+			output_format: "json"
+		},
+		onSuccess: function (response) {
+			var jobStatus = response.responseText.evalJSON()["status"];
+			if (jobStatus == 1 || jobStatus == 5)
+			{
+				// Repeat.  Hopefully not so many times as to overflow the stack.
+				waitForScanExistingZoneJob.delay(0.5, z, jobId, infoCell, device);
+			}
+			else if (jobStatus == 2)
+			{
+			}
+			else if (jobStatus == 4)
+			{
+				// Success.  Now get the result of the scan.
+				getScanExistingZoneResult(z, infoCell, device);
+			}
+		}, 
+		onFailure: function () {
+		}
+	});
+}
+
+function getScanExistingZoneResult(z, infoCell, device)
+{
+	var partitionList;
+	new Ajax.Request("../port_3480/data_request", {
+		method: "get",
+		parameters: {
+			id: "lr_ZoneScan",
+			zone: z,
+			rand: Math.random(),
+			output_format: "json"
+		},
+		onSuccess: function (response) {
+			var partitionList = response.responseText.evalJSON()["partitions"];
+			if (partitionList == undefined)
+			{
+			}
+			else
+			{
+				// Success.  Populate.
+				var info = "";
+				if (partitionList != "") info += "Partition " + partitionList;
+				infoCell.innerHTML = info;
+			}
+		}, 
+		onFailure: function () {
+		}
+	});
 }
 
 // When "Scan" button on "Zones" tab is clicked.
@@ -246,6 +350,45 @@ function scanAllZones(maxZone, device)
 		// Request the zone information.
 		scanZone.delay(0.5 * stagger++, z, row, device);
 	}
+}
+
+function getScanZoneResult(z, row, device)
+{
+	var partitionList;
+	new Ajax.Request("../port_3480/data_request", {
+		method: "get",
+		parameters: {
+			id: "lr_ZoneScan",
+			zone: z,
+			rand: Math.random(),
+			output_format: "json"
+		},
+		onSuccess: function (response) {
+			var partitionList = response.responseText.evalJSON()["partitions"];
+			if (partitionList == undefined)
+			{
+				row.innerHTML = '<td colspan="5">Scanning zone ' + z + ' failed</td>';
+			}
+			else
+			{
+				// Success.  Populate.
+				var info = "";
+				if (partitionList != "") info += "Partition " + partitionList;
+				while (row.hasChildNodes()) { row.removeChild(row.firstChild); }
+				row.appendChild(document.createElement("td")).innerHTML = z;
+				var name = row.appendChild(document.createElement("td"));
+				name.innerHTML = "Scanning name...";
+				row.appendChild(document.createElement("td")).innerHTML = info;
+				var type = row.appendChild(document.createElement("td"));
+				var action = row.appendChild(document.createElement("td"));
+				// Now we want the zone name.  Which is another scan-wait-fetch cycle...
+				scanZoneName.delay(0.5, z, name, type, action, device);
+			}
+		}, 
+		onFailure: function () {
+			row.innerHTML = '<td colspan="5">Scanning zone ' + z + ' failed</td>';
+		}
+	});
 }
 
 // Scan one zone to get its details.
@@ -323,6 +466,7 @@ function getScanZoneResult(z, row, device)
 		parameters: {
 			id: "lr_ZoneScan",
 			zone: z,
+			rand: Math.random(),
 			output_format: "json"
 		},
 		onSuccess: function (response) {
@@ -430,6 +574,7 @@ function getScanZoneNameResult(z, name, type, action, device)
 		parameters: {
 			id: "lr_ZoneNameScan",
 			zone: z,
+			rand: Math.random(),
 			output_format: "json"
 		},
 		onSuccess: function (response) {
@@ -501,7 +646,7 @@ function addManualZone(button, device)
 {
 	var z = $F("caddx_zone_manual");
 	var name = $F("caddx_zoneName_manual");
-	if (z > 0 && z <= 48 && !existingZone[z] && name != "")
+	if (z > 0 && z <= 128 && !existingZone[z] && name != "")
 	{
 		button.disable();
 		$("caddx_zone_manual").disable();
@@ -540,6 +685,7 @@ function usersTab(device)
 		method: "get",
 		parameters: {
 			id: "lr_GetConfiguration",
+			rand: Math.random(),
 			output_format: "json"
 		},
 		onSuccess: function (response) {
@@ -698,7 +844,8 @@ function scanNewUsers(maxUser, pinLength, device)
 		html += '<td><input type="button" Value="Add" onclick="addScannedUser(' + u + ',this,' + device + ')"></input></td>';
 		row.innerHTML = html;
 		// Request the user information.
-		scanUser.delay(0.5 * stagger++, u, masterPin, row.select(".caddx_userpin"), row.select(".caddx_userauthorization"), false, false, pinLength, device);
+		if (u < 98)
+			scanUser.delay(0.5 * stagger++, u, masterPin, row.select(".caddx_userpin"), row.select(".caddx_userauthorization"), false, false, pinLength, device);
 	}
 }
 
@@ -781,6 +928,7 @@ function getScanUserResult(u, pinCell, authorizationCell, setUserCodeEnabled, se
 		parameters: {
 			id: "lr_UserScan",
 			user: u,
+			rand: Math.random(),
 			output_format: "json"
 		},
 		onSuccess: function (response) {
@@ -909,4 +1057,15 @@ function addManualUser(button, device)
 		$('caddx_saveChanges').show();
 	}
 
+}
+
+/**********
+ *
+ * Event Log tab
+ *
+ **********/
+
+function eventLogTab(device)
+{
+	set_panel_html("Not yet implemented");
 }

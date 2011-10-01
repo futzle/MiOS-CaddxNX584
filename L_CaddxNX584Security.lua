@@ -365,6 +365,12 @@ function setUpInterface(deviceId)
 					CAPABILITY_ZONE_NAME = true
 				end
 
+				-- Get historical event log entries
+				if (bitMask(string.byte(string.sub(message,8)), 4)) then
+					luup.log("Log Event enabled")
+					CAPABILITY_LOG_EVENT = true
+				end
+
 				-- User Information Request with PIN
 				-- Get a user's authorization and PIN
 				if (bitMask(string.byte(string.sub(message,9)), 4)) then
@@ -1253,6 +1259,7 @@ function getConfigurationJson()
 		"\"pinLength\": " .. CONFIGURATION_PIN_LENGTH .. "," ..
 		"\"capability\": { " ..
 			"\"zoneName\": " .. (CAPABILITY_ZONE_NAME and "\"true\"" or "\"false\"") .. "," ..
+			"\"logEvent\": " .. (CAPABILITY_LOG_EVENT and "\"true\"" or "\"false\"") .. "," ..
 			"\"setClock\": " .. (CAPABILITY_SET_CLOCK and "\"true\"" or "\"false\"") .. "," ..
 			"\"getUserInformationWithPin\": " .. (CAPABILITY_GET_USER_INFORMATION_WITH_PIN and "\"true\"" or "\"false\"") .. "," ..
 			"\"setUserCodeWithPin\": " .. (CAPABILITY_SET_USER_CODE_WITH_PIN and "\"true\"" or "\"false\"") .. "," ..
