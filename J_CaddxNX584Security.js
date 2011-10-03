@@ -1067,7 +1067,7 @@ function addManualUser(button, device)
 
 function eventLogTab(device)
 {
-	var topOfStack = get_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "StackPointer", 0) - 0;
+	var topOfStack = get_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "StackPointer", 1) - 0;
 	var html = '';
 	html += '<table>';
 	html += '<th>Date</th><th>Time</th><th>Event</th>';
