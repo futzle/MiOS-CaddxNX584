@@ -42,5 +42,14 @@
         </argument>
       </argumentList>
     </action>
+    <action>
+      <name>LogEventScan</name>
+      <argumentList>
+        <argument>
+          <name>StackPointer</name>
+          <direction>in</direction>
+        </argument>
+      </argumentList>
+    </action>
   </actionList>
 </scpd>

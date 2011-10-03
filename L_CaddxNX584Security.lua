@@ -104,7 +104,7 @@ LOG_MESSAGE_USER = {
 	[120] = "First to open (User %d Partition %d)",
 	[121] = "Last to close (User %d Partition %d)",
 	[121] = "Last to close (User %d Partition %d)",
-	[122] = "PIN entered with bit 7 set(User %d Partition %d)",
+	[122] = "PIN entered with bit 7 set (User %d Partition %d)",
 	[123] = "Output trip (User %d)",
 }
 
@@ -253,10 +253,12 @@ function caddxInitialize(deviceId)
 	-- Scan result callbacks.
 	ZONE_SCAN = {}
 	USER_SCAN = {}
+	LOGEVENT_SCAN = {}
 	luup.register_handler("callbackHandler", "GetConfiguration")
 	luup.register_handler("callbackHandler", "ZoneScan")
 	luup.register_handler("callbackHandler", "ZoneNameScan")
 	luup.register_handler("callbackHandler", "UserScan")
+	luup.register_handler("callbackHandler", "LogEventScan")
 
 	-- Setup is complete.  Prepare to finish initialization.
 	debug("Finished initialization")
@@ -634,6 +636,40 @@ function processZonesSnapshotMessage(message)
 	return z16
 end
 
+-- processLogEventMessage(message)
+-- Extract log event information from a log message.
+function processLogEventMessage(message)
+	local logSize = string.byte(string.sub(message, 2))
+	local messageNumber = string.byte(string.sub(message, 3)) % 127
+	local variableNumber = string.byte(string.sub(message, 4))
+	local partitionNumber = string.byte(string.sub(message, 5)) + 1
+	local month = string.byte(string.sub(message, 6))
+	local date = string.byte(string.sub(message, 7))
+	local hour = string.byte(string.sub(message, 8))
+	local minute = string.byte(string.sub(message, 9))
+
+	local messageText = "Unknown message"
+	local messageType
+	if (LOG_MESSAGE_ZONE[messageNumber]) then
+		messageType = "Zone"
+		variableNumber = variableNumber + 1
+		messageText = string.format(LOG_MESSAGE_ZONE[messageNumber], variableNumber, partitionNumber)
+	elseif (LOG_MESSAGE_PANEL[messageNumber]) then
+		messageType = "Panel"
+		messageText = string.format(LOG_MESSAGE_PANEL[messageNumber], partitionNumber)
+	elseif (LOG_MESSAGE_DEVICE[messageNumber]) then
+		messageType = "Device"
+		messageText = string.format(LOG_MESSAGE_DEVICE[messageNumber], variableNumber, partitionNumber)
+	elseif (LOG_MESSAGE_USER[messageNumber]) then
+		messageType = "User"
+		variableNumber = variableNumber + 1
+		messageText = string.format(LOG_MESSAGE_USER[messageNumber], variableNumber, partitionNumber)
+	end
+
+	return messageNumber, messageType, variableNumber, partitionNumber,
+		month, date, hour, minute, messageText, logSize
+end
+
 -- updatePartitionDevice(deviceId, partition)
 -- Update the Luup child device corresponding to the partition
 -- with information previously set in the PARTITION_STATUS variable.
@@ -764,6 +800,9 @@ function handleSystemStatusMessage(deviceId, message)
 	-- Battery level is only binary.  Fake a continuum.
 	luup.variable_set("urn:micasaverde-com:serviceId:HaDevice1", "BatteryLevel", bitMask(string.byte(string.sub(message,3)), 64) and 10 or 100, deviceId)
 
+	-- Communication stack pointer.
+	luup.variable_set(ALARM_SERVICEID, "StackPointer", string.byte(string.sub(message,11)), deviceId)
+
 	return 0
 end
 
@@ -772,32 +811,19 @@ end
 function handleLogEventMessage(deviceId, message)
 	debug("Handling message: 0x0a Log Event")
 
-	local messageNumber = string.byte(string.sub(message, 3)) % 127
-	local variableNumber = string.byte(string.sub(message, 4))
-	local partitionNumber = string.byte(string.sub(message, 5))
-	local month = string.byte(string.sub(message, 6))
-	local date = string.byte(string.sub(message, 7))
-	local hour = string.byte(string.sub(message, 8))
-	local minute = string.byte(string.sub(message, 9))
+	local messageNumber, messageType, variableNumber, partitionNumber,
+		month, date, hour, minute, messageText, logSize =
+		processLogEventMessage(message)
 
-	local messageText = "Unknown message"
-	if (LOG_MESSAGE_ZONE[messageNumber]) then
-		messageText = string.format(LOG_MESSAGE_ZONE[messageNumber], variableNumber+1, partitionNumber+1)
-		luup.variable_set(ALARM_SERVICEID, "LastLogEventZone", variableNumber+1, deviceId)
-		luup.variable_set(ALARM_SERVICEID, "LastLogEventPartition", partitionNumber+1, deviceId)
-	elseif (LOG_MESSAGE_PANEL[messageNumber]) then
-		messageText = string.format(LOG_MESSAGE_PANEL[messageNumber], partitionNumber+1)
-		luup.variable_set(ALARM_SERVICEID, "LastLogEventPartition", partitionNumber+1, deviceId)
-	elseif (LOG_MESSAGE_DEVICE[messageNumber]) then
-		messageText = string.format(LOG_MESSAGE_DEVICE[messageNumber], variableNumber, partitionNumber+1)
+	if (messageType == "Zone") then
+		luup.variable_set(ALARM_SERVICEID, "LastLogEventZone", variableNumber, deviceId)
+	elseif (messageType == "Device") then
 		luup.variable_set(ALARM_SERVICEID, "LastLogEventDevice", variableNumber, deviceId)
-		luup.variable_set(ALARM_SERVICEID, "LastLogEventPartition", partitionNumber+1, deviceId)
-	elseif (LOG_MESSAGE_USER[messageNumber]) then
-		messageText = string.format(LOG_MESSAGE_USER[messageNumber], variableNumber+1, partitionNumber+1)
-		luup.variable_set(ALARM_SERVICEID, "LastLogEventUser", variableNumber+1, deviceId)
-		luup.variable_set(ALARM_SERVICEID, "LastLogEventPartition", partitionNumber+1, deviceId)
+	elseif (messageType == "User") then
+		luup.variable_set(ALARM_SERVICEID, "LastLogEventUser", variableNumber, deviceId)
 	end
-
+	luup.variable_set(ALARM_SERVICEID, "LastLogEventPartition", partitionNumber, deviceId)
+	if (minute < 10) then minute = "0" + minute end
 	luup.variable_set(ALARM_SERVICEID, "LastLogEventTime", string.format("%d-%d %d:%d", month, date, hour, minute), deviceId)
 	luup.variable_set(ALARM_SERVICEID, "LastLogEvent", messageText, deviceId)
 	debug(string.format("Log message: %d %s", messageNumber, messageText))
@@ -805,7 +831,7 @@ function handleLogEventMessage(deviceId, message)
 
 	return 0
 end
-
+	
 --
 -- Utility functions for communicating with the interface.
 --
@@ -1251,6 +1277,26 @@ function getUserInformationJson(u)
     	"}"
 end
 
+-- getLogEventJson(u)
+-- Given a LOGEVENT_SCAN[] entry, produce JSON output
+-- for a lr_LogEventScan callback.
+function getLogEventJson(sp)
+	return "{" ..
+		"\"messageNumber\": \"" .. sp.messageNumber .. "\"," ..
+		"\"messageType\": \"" .. sp.messageNumber .. "\"," ..
+		"\"variableNumber\": \"" .. sp.variableNumber .. "\"," ..
+		"\"partitionNumber\": \"" .. sp.partitionNumber .. "\"," ..
+		"\"messageText\": \"" .. sp.messageText .. "\"," ..
+		"\"logSize\": \"" .. sp.logSize .. "\"," ..
+		"\"timestamp\": {" ..
+			"\"month\": \"" .. sp.month .. "\"," ..
+			"\"date\": \"" .. sp.date .. "\"," ..
+			"\"hour\": \"" .. sp.hour .. "\"," ..
+			"\"minute\": \"" .. sp.minute .. "\"" ..
+    	"}" ..
+    	"}"
+end
+
 -- getConfigurationJson()
 -- Return the configuration learned at startup, as a JSON object.
 -- Used by the JavaScript Configuration tab.
@@ -1284,6 +1330,9 @@ function callbackHandler(lul_request, lul_parameters, lul_outputformat)
 		elseif (lul_request == "UserScan") then
 			local u = tonumber(lul_parameters.user)
 			return getUserInformationJson(USER_SCAN[u])
+		elseif (lul_request == "LogEventScan") then
+			local sp = tonumber(lul_parameters.stackpointer)
+			return getLogEventJson(LOGEVENT_SCAN[sp])
 		elseif (lul_request == "GetConfiguration") then
 			return getConfigurationJson()
 		end
@@ -1484,6 +1533,69 @@ function jobUserScan(lul_device, lul_settings, lul_job)
 			end,
 			[29] = function(deviceId, message)
 				debug("UserScan job request acknowledged")
+				return 0
+			end,
+			[31] = function(deviceId, message)
+				return pendingJobDone(getJobId(lul_job), 2)
+			end,
+		}
+	)
+	debug("Job: Processing send queue")
+	processSendQueue()
+	debug("Job: Started")
+	-- Either the timeout or incoming task will be called next.
+	return 5, 10
+end
+
+-- jobLogEventScan(lul_device, lul_settings, lul_job)
+-- Invoked by the JavaScript Event Log tab.
+-- http://vera/port_3480/data_request?id=lu_action&serviceId=urn:futzle-com:serviceId:CaddxNX584Security1&action=LogEventScan&StackPointer=1&DeviceNum=n
+-- Sets the LOGEVENT_SCAN[] variable which is later fetched from callbackHandler().
+function jobLogEventScan(lul_device, lul_settings, lul_job)
+	debug("Job: Alarm: LogEventScan: " .. lul_device .. " " .. lul_settings.StackPointer .. " job " .. getJobId(lul_job))
+
+	if (not CAPABILITY_LOG_EVENT) then
+		-- Cannot get log; return error.
+		return 2, nil
+	end
+
+	local sp = tonumber(lul_settings.StackPointer)
+	if (sp == nil) then return 2, nil end
+
+	-- Ask for this log entry.
+	addPendingJob(getJobId(lul_job),
+		"\042" .. string.char(sp),
+		{
+			[10] = function (deviceId, message)
+				debug("LogEventScan job handling message: 0x0a Log Event Reply")
+				if (string.byte(string.sub(message,1)) == sp) then
+					debug(string.format("LogEventScan stack pointer %d", sp))
+
+					local messageNumber, messageType, variableNumber, partitionNumber,
+						month, date, hour, minute, messageText, logSize =
+						processLogEventMessage(message)
+
+					LOGEVENT_SCAN[sp] = {
+						messageNumber = messageNumber,
+						messageType = messageType,
+						variableNumber = variableNumber,
+						partitionNumber = partitionNumber,
+						logSize = logSize,
+						month = month,
+						date = date,
+						hour = hour,
+						minute = minute,
+						messageText = messageText,
+					} 
+					return pendingJobDone(getJobId(lul_job), 4)
+				end
+				return 0
+			end,
+			[28] = function(deviceId, message)
+				return pendingJobDone(getJobId(lul_job), 2)
+			end,
+			[29] = function(deviceId, message)
+				debug("LogEvent job request acknowledged")
 				return 0
 			end,
 			[31] = function(deviceId, message)

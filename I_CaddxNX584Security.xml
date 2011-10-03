@@ -62,6 +62,16 @@ end
 			</incoming>
 		</action>
 		<action>
+			<serviceId>urn:futzle-com:serviceId:CaddxNX584Security1</serviceId>
+			<name>LogEventScan</name>
+			<job>
+				return plugin.jobLogEventScan(lul_device, lul_settings, lul_job)
+			</job>
+			<incoming>
+				return plugin.handleReadByteResult(lul_job, lul_device, plugin.readByte(lul_data));
+			</incoming>
+		</action>
+		<action>
 			<serviceId>urn:micasaverde-com:serviceId:SecuritySensor1</serviceId>
 			<name>SetArmed</name>
 			<job>

@@ -1067,5 +1067,126 @@ function addManualUser(button, device)
 
 function eventLogTab(device)
 {
-	set_panel_html("Not yet implemented");
+	var topOfStack = get_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "StackPointer", 0) - 0;
+	var html = '';
+	html += '<table>';
+	html += '<th>Date</th><th>Time</th><th>Event</th>';
+	html += '<tbody id="caddx_logEventTable"></tbody>'
+	html += '</table>';
+
+	set_panel_html(html);
+
+	scanLogEvent(topOfStack, 10, $('caddx_logEventTable'), device)
+}
+
+function scanLogEvent(sp, count, table, device)
+{
+	new Ajax.Request("../port_3480/data_request", {
+		method: "get",
+		parameters: {
+			id: "lu_action",
+			serviceId: "urn:futzle-com:serviceId:CaddxNX584Security1",
+			action: "LogEventScan",
+			StackPointer: sp,
+			DeviceNum: device,
+			output_format: "json"
+		},
+		onSuccess: function (response) {
+			var jobId = response.responseText.evalJSON()["u:LogEventScanResponse"]["JobID"];
+			if (jobId == undefined)
+			{
+				table.insertRow(-1).innerHTML = 'Failed to get log';
+			}
+			else
+			{
+				waitForScanLogEventJob.delay(0.5, sp, jobId, count, table, device);
+			}
+		}, 
+		onFailure: function () {
+			table.insertRow(-1).innerHTML = 'Failed to get log';
+		}
+	});
+}
+
+function waitForScanLogEventJob(sp, jobId, count, table, device)
+{
+	new Ajax.Request("../port_3480/data_request", {
+		method: "get",
+		parameters: {
+			id: "jobstatus",
+			job: jobId,
+			output_format: "json"
+		},
+		onSuccess: function (response) {
+			var jobStatus = response.responseText.evalJSON()["status"];
+			if (jobStatus == 1 || jobStatus == 5)
+			{
+				// Repeat.  Hopefully not so many times as to overflow the stack.
+				waitForScanLogEventJob.delay(0.5, sp, jobId, count, table, device);
+			}
+			else if (jobStatus == 2)
+			{
+				table.insertRow(-1).innerHTML = 'Failed to get log';
+			}
+			else if (jobStatus == 4)
+			{
+				// Success.  Now get the result of the scan.
+				getScanLogEventResult(sp, count, table, device);
+			}
+		}, 
+		onFailure: function () {
+			table.insertRow(-1).innerHTML = 'Failed to get log';
+		}
+	});
+}
+
+function getScanLogEventResult(sp, count, table, device)
+{
+	new Ajax.Request("../port_3480/data_request", {
+		method: "get",
+		parameters: {
+			id: "lr_LogEventScan",
+			stackpointer: sp,
+			rand: Math.random(),
+			output_format: "json"
+		},
+		onSuccess: function (response) {
+			var log = response.responseText.evalJSON();
+			var row = table.insertRow(-1);
+			var html = '';
+
+			// Date.
+			html += '<td>';
+			html += log.timestamp.month;
+			html += '-';
+			html += log.timestamp.date;
+			html += '</td>';
+
+			// Time.
+			html += '<td>';
+			html += log.timestamp.hour;
+			html += ':';
+			if (log.timestamp.minute < 10) html += '0';
+			html += log.timestamp.minute;
+			html += '</td>';
+
+			// Message.
+			html += '<td>';
+			html += log.messageText.escapeHTML();
+			html += '</td>';
+
+			row.innerHTML = html;
+
+			// Next row of log.
+			if (count > 1)
+			{
+				// Stack rolls around: 0 to max log size.
+				if (--sp == 0) sp = log.logSize - 0;
+				scanLogEvent(sp-1, count-1, table, device)
+			}
+		}, 
+		onFailure: function () {
+			table.insertRow(-1).innerHTML = 'Failed to get log';
+		}
+	});
 }
