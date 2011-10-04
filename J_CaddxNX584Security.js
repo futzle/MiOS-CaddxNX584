@@ -1069,18 +1069,22 @@ function eventLogTab(device)
 {
 	var topOfStack = get_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "StackPointer", 1) - 0;
 	var html = '';
-	html += '<table>';
+	html += '<p>Log entries <input type="hidden" id="caddx_getMoreLogStart" value="' + topOfStack + '"></input><input id="caddx_getMoreLogCount" type="text" value="10" size="3"></input> <input id="caddx_getMoreLogButton" type="button" value="Get more" disabled="disabled" onclick="scanLogEvent($F(\'caddx_getMoreLogStart\'), $F(\'caddx_getMoreLogCount\'), $(\'caddx_logEventTable\'), ' + device + ')"></input></p>';
+	html += '<table width="100%">';
 	html += '<th>Date</th><th>Time</th><th>Event</th>';
 	html += '<tbody id="caddx_logEventTable"></tbody>'
 	html += '</table>';
 
 	set_panel_html(html);
 
-	scanLogEvent(topOfStack, 10, $('caddx_logEventTable'), device)
+	scanLogEvent(topOfStack, $F('caddx_getMoreLogCount'), $('caddx_logEventTable'), device)
 }
 
 function scanLogEvent(sp, count, table, device)
 {
+	$('caddx_getMoreLogButton').disable();
+	var row = table.insertRow(-1);
+	row.innerHTML = '<td colspan="3">Getting event...</td>';
 	new Ajax.Request("../port_3480/data_request", {
 		method: "get",
 		parameters: {
@@ -1095,21 +1099,24 @@ function scanLogEvent(sp, count, table, device)
 			var jobId = response.responseText.evalJSON()["u:LogEventScanResponse"]["JobID"];
 			if (jobId == undefined)
 			{
-				table.insertRow(-1).innerHTML = 'Failed to get log';
+				row.innerHTML = '<td colspan="3">Failed to get event</td>';
+				$('caddx_getMoreLogButton').enable();
 			}
 			else
 			{
-				waitForScanLogEventJob.delay(0.5, sp, jobId, count, table, device);
+				waitForScanLogEventJob.delay(0.5, sp, jobId, count, table, row, device);
 			}
 		}, 
 		onFailure: function () {
-			table.insertRow(-1).innerHTML = 'Failed to get log';
+			row.innerHTML = '<td colspan="3">Failed to get event</td>';
+			$('caddx_getMoreLogButton').enable();
 		}
 	});
 }
 
-function waitForScanLogEventJob(sp, jobId, count, table, device)
+function waitForScanLogEventJob(sp, jobId, count, table, row, device)
 {
+	row.innerHTML = '<td colspan="3">Waiting for response...</td>';
 	new Ajax.Request("../port_3480/data_request", {
 		method: "get",
 		parameters: {
@@ -1122,26 +1129,29 @@ function waitForScanLogEventJob(sp, jobId, count, table, device)
 			if (jobStatus == 1 || jobStatus == 5)
 			{
 				// Repeat.  Hopefully not so many times as to overflow the stack.
-				waitForScanLogEventJob.delay(0.5, sp, jobId, count, table, device);
+				waitForScanLogEventJob.delay(0.5, sp, jobId, count, table, row, device);
 			}
 			else if (jobStatus == 2)
 			{
-				table.insertRow(-1).innerHTML = 'Failed to get log';
+				row.innerHTML = '<td colspan="3">Failed to get event</td>';
+				$('caddx_getMoreLogButton').enable();
 			}
 			else if (jobStatus == 4)
 			{
 				// Success.  Now get the result of the scan.
-				getScanLogEventResult(sp, count, table, device);
+				getScanLogEventResult(sp, count, table, row, device);
 			}
 		}, 
 		onFailure: function () {
-			table.insertRow(-1).innerHTML = 'Failed to get log';
+			row.innerHTML = '<td colspan="3">Failed to get event</td>';
+			$('caddx_getMoreLogButton').enable();
 		}
 	});
 }
 
-function getScanLogEventResult(sp, count, table, device)
+function getScanLogEventResult(sp, count, table, row, device)
 {
+	row.innerHTML = '<td colspan="3">Getting response...</td>';
 	new Ajax.Request("../port_3480/data_request", {
 		method: "get",
 		parameters: {
@@ -1152,7 +1162,6 @@ function getScanLogEventResult(sp, count, table, device)
 		},
 		onSuccess: function (response) {
 			var log = response.responseText.evalJSON();
-			var row = table.insertRow(-1);
 			var html = '';
 
 			// Date.
@@ -1178,15 +1187,23 @@ function getScanLogEventResult(sp, count, table, device)
 			row.innerHTML = html;
 
 			// Next row of log.
+			// Stack rolls around: 0 to max log size - 1.
+			if (--sp < 0) sp = log.logSize - 1;
+			$('caddx_getMoreLogStart').setValue(sp);
 			if (count > 1)
 			{
-				// Stack rolls around: 0 to max log size.
-				if (--sp == 0) sp = log.logSize - 0;
-				scanLogEvent(sp-1, count-1, table, device)
+				// Do another row.
+				scanLogEvent(sp, count-1, table, device)
+			}
+			else
+			{
+				// Enable "get more" button.
+				$('caddx_getMoreLogButton').enable();
 			}
 		}, 
 		onFailure: function () {
-			table.insertRow(-1).innerHTML = 'Failed to get log';
+			row.innerHTML = '<td colspan="3">Failed to get event</td>';
+			$('caddx_getMoreLogButton').enable();
 		}
 	});
 }
