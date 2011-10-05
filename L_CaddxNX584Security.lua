@@ -1610,6 +1610,64 @@ function jobLogEventScan(lul_device, lul_settings, lul_job)
 	return 5, 10
 end
 
+-- jobUserSetPIN(lul_device, lul_settings, lul_job)
+-- Invoked by the JavaScript Users tab when setting a User's PIN.
+-- http://vera/port_3480/data_request?id=lu_action&serviceId=urn:futzle-com:serviceId:CaddxNX584Security1&action=UserSetPIN&User=1&MasterPIN=1234&UserPIN=5678&DeviceNum=n
+function jobUserSetPIN(lul_device, lul_settings, lul_job)
+	debug("Job: Alarm: UserSetPIN: " .. lul_device .. " " .. lul_settings.User .. " job " .. getJobId(lul_job))
+
+	if (not CAPABILITY_SET_USER_CODE_WITH_PIN) then
+		-- Cannot set PIN; return error.
+		return 2, nil
+	end
+
+	local masterPIN = validatePin(lul_settings.MasterPIN)
+	if (masterPIN == nil) then return 2, nil end
+
+	local u = tonumber(lul_settings.User)
+	if (u == nil) then return 2, nil end
+
+	local userPIN = nil
+	if (lul_settings.UserPIN == nil) then
+		-- Clear the PIN.
+		userPIN = string.char(255) .. string.char(255) .. string.char(255)
+	else
+		userPIN = validatePin(lul_settings.UserPIN)
+	end
+	if (userPIN == nil) then return 2, nil end
+
+	-- Ask for this log entry.
+	addPendingJob(getJobId(lul_job),
+		"\052" .. masterPIN .. string.char(u) .. userPIN,
+		{
+			-- On success, returns 0x12 not 0x1d.
+			[18] = function (deviceId, message)
+				debug("UserSetPIN job handling message: 0x12 User Information Reply")
+				if (string.byte(string.sub(message,1)) == u) then
+					-- Check the returned PIN.
+					local pin = unpackPin(string.sub(message,2,4))
+					if ((pin == "----" or pin == "------") and lul_settings.UserPIN == nil
+						or pin == lul_settings.UserPIN) then
+						return pendingJobDone(getJobId(lul_job), 4)
+					end
+				end
+				return 0
+			end,
+			[28] = function(deviceId, message)
+				return pendingJobDone(getJobId(lul_job), 2)
+			end,
+			[31] = function(deviceId, message)
+				return pendingJobDone(getJobId(lul_job), 2)
+			end,
+		}
+	)
+	debug("Job: Processing send queue")
+	processSendQueue()
+	debug("Job: Started")
+	-- Either the timeout or incoming task will be called next.
+	return 5, 10
+end
+
 -- jobSetArmed(lul_device, lul_settings, lul_job)
 -- Set the armed/bypass state of a zone device.
 function jobSetArmed(lul_device, lul_settings, lul_job)

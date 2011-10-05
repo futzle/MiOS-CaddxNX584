@@ -43,6 +43,23 @@
       </argumentList>
     </action>
     <action>
+      <name>UserSetPIN</name>
+      <argumentList>
+        <argument>
+          <name>User</name>
+          <direction>in</direction>
+        </argument>
+        <argument>
+          <name>MasterPIN</name>
+          <direction>in</direction>
+        </argument>
+        <argument>
+          <name>UserPIN</name>
+          <direction>in</direction>
+        </argument>
+      </argumentList>
+    </action>
+    <action>
       <name>LogEventScan</name>
       <argumentList>
         <argument>

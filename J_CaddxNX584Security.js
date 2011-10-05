@@ -812,7 +812,8 @@ function scanAllExistingUsers(setUserCodeEnabled, setUserAuthorizationEnabled, p
 		var u = userList[userObjectIterator].firstChild.data;
 		var pinCell = userList[userObjectIterator].parentNode.select('.caddx_userpin');
 		var authorizationCell = userList[userObjectIterator].parentNode.select('.caddx_userauthorization');
-		scanUser.delay(0.5 * stagger++, u, masterPin, pinCell, authorizationCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device);
+		if (u < 98)
+			scanUser.delay(0.5 * stagger++, u, masterPin, pinCell, authorizationCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device);
 	}
 }
 
