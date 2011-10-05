@@ -74,14 +74,27 @@ function configurationTab(device)
 				table += '<tr title="Use a master PIN to set users\' PINs">';
 				table += '<td>Set user code*</td>';
 				table += '<td><input type="checkbox" disabled="disabled" ';
-				if (configuration["capability"]["setUserCodeWithPin"] == "true") table += 'checked="checked"';
+				var setUserCodeWithPinEnabled = configuration["capability"]["setUserCodeWithPin"] == "true";
+				if (setUserCodeWithPinEnabled) table += 'checked="checked"';
 				table += '></input></td></tr>';
 
 				table += '<tr title="Use a master PIN to set users\' Authorization">';
 				table += '<td>Set user authorization*</td>';
 				table += '<td><input type="checkbox" disabled="disabled" ';
-				if (configuration["capability"]["setUserAuthorizationWithPin"] == "true") table += 'checked="checked"';
+				var setUserAuthorizationWithPinEnabled = configuration["capability"]["setUserAuthorizationWithPin"] == "true";
+				if (setUserAuthorizationWithPinEnabled) table += 'checked="checked"';
 				table += '></input></td></tr>';
+
+				if (setUserCodeWithPinEnabled || setUserAuthorizationWithPinEnabled)
+				{
+					var masterUserProtect = (get_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "MasterUserProtect", 0) != "0");
+					table += '<tr title="Prevent changing Master users\' PINs or authorizations">';
+					table += '<td>Protect Master users</td>';
+					table += '<td><input type="checkbox" onclick="set_device_state(' + device + ', \'urn:futzle-com:serviceId:CaddxNX584Security1\', \'MasterUserProtect\', $F(this) ? \'\' : \'0\', 0); $(\'caddx_saveChanges\').show()" ';
+					if (masterUserProtect) table += 'checked="checked"';
+					table += '></input></td>';
+					table += '</tr>';
+				}
 
 				table += '<tr title="Arm and disarm the panel with a PIN">';
 				table += '<td>Primary keypad function*</td>';
@@ -757,7 +770,7 @@ function usersTabWithConfiguration(div, getUserInformationEnabled, setUserCodeEn
 					table += '<td class="caddx_userauthorization">';
 					table += '</td>';
 				}
-				table += '<td><input type="button" value="Hide" onclick="hideExistingUser(' + u + ',this,' + device + ')"></input></td>';
+				table += '<td class="caddx_useraction"><input class="caddx_useraction_hide" type="button" value="Hide" onclick="hideExistingUser(' + u + ',this,' + device + ')"></input></td>';
 			}
 			table += '</tr>';
 			existingUser[u] = true;
@@ -812,8 +825,9 @@ function scanAllExistingUsers(setUserCodeEnabled, setUserAuthorizationEnabled, p
 		var u = userList[userObjectIterator].firstChild.data;
 		var pinCell = userList[userObjectIterator].parentNode.select('.caddx_userpin');
 		var authorizationCell = userList[userObjectIterator].parentNode.select('.caddx_userauthorization');
+		var actionCell = userList[userObjectIterator].parentNode.select('.caddx_useraction');
 		if (u < 98)
-			scanUser.delay(0.5 * stagger++, u, masterPin, pinCell, authorizationCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device);
+			scanUser.delay(0.5 * stagger++, u, masterPin, pinCell, authorizationCell, actionCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device);
 	}
 }
 
@@ -846,11 +860,11 @@ function scanNewUsers(maxUser, pinLength, device)
 		row.innerHTML = html;
 		// Request the user information.
 		if (u < 98)
-			scanUser.delay(0.5 * stagger++, u, masterPin, row.select(".caddx_userpin"), row.select(".caddx_userauthorization"), false, false, pinLength, device);
+			scanUser.delay(0.5 * stagger++, u, masterPin, row.select(".caddx_userpin"), row.select(".caddx_userauthorization"), new Array(), false, false, pinLength, device);
 	}
 }
 
-function scanUser(u, masterPin, pinCell, authorizationCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device)
+function scanUser(u, masterPin, pinCell, authorizationCell, actionCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device)
 {
 	// if (pinCell.length > 0) pinCell[0].innerHTML = "Fetching...";
 	// if (authorizationCell.length > 0) authorizationCell[0].innerHTML = "Fetching..."
@@ -877,7 +891,7 @@ function scanUser(u, masterPin, pinCell, authorizationCell, setUserCodeEnabled, 
 			{
 				if (pinCell.length > 0) pinCell[0].innerHTML = "Waiting...";
 				if (authorizationCell.length > 0) authorizationCell[0].innerHTML = "Waiting..."
-				waitForScanUserJob.delay(0.5, u, jobId, pinCell, authorizationCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device);
+				waitForScanUserJob.delay(0.5, u, jobId, pinCell, authorizationCell, actionCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device);
 			}
 		}, 
 		onFailure: function () {
@@ -887,7 +901,7 @@ function scanUser(u, masterPin, pinCell, authorizationCell, setUserCodeEnabled, 
 	});
 }
 
-function waitForScanUserJob(u, jobId, pinCell, authorizationCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device)
+function waitForScanUserJob(u, jobId, pinCell, authorizationCell, actionCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device)
 {
 	new Ajax.Request("../port_3480/data_request", {
 		method: "get",
@@ -901,7 +915,7 @@ function waitForScanUserJob(u, jobId, pinCell, authorizationCell, setUserCodeEna
 			if (jobStatus == 1 || jobStatus == 5)
 			{
 				// Repeat.  Hopefully not so many times as to overflow the stack.
-				waitForScanUserJob.delay(0.5, u, jobId, pinCell, authorizationCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device);
+				waitForScanUserJob.delay(0.5, u, jobId, pinCell, authorizationCell, actionCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device);
 			}
 			else if (jobStatus == 2)
 			{
@@ -912,7 +926,7 @@ function waitForScanUserJob(u, jobId, pinCell, authorizationCell, setUserCodeEna
 			{
 				if (pinCell.length > 0) pinCell[0].innerHTML = "Getting result";
 				if (authorizationCell.length > 0) authorizationCell[0].innerHTML = "Getting result"
-				getScanUserResult(u, pinCell, authorizationCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device);
+				getScanUserResult(u, pinCell, authorizationCell, actionCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device);
 			}
 		}, 
 		onFailure: function () {
@@ -922,7 +936,7 @@ function waitForScanUserJob(u, jobId, pinCell, authorizationCell, setUserCodeEna
 	});
 }
 
-function getScanUserResult(u, pinCell, authorizationCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device)
+function getScanUserResult(u, pinCell, authorizationCell, actionCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device)
 {
 	new Ajax.Request("../port_3480/data_request", {
 		method: "get",
@@ -944,12 +958,25 @@ function getScanUserResult(u, pinCell, authorizationCell, setUserCodeEnabled, se
 				// Success.  Populate.
 				if (pinCell.length > 0)
 				{
-					if (false && setUserCodeEnabled)
+					var masterUserProtect = (get_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "MasterUserProtect", 0) != "0");
+					if ((!masterUserProtect || !(userInfo.authorization.master)) && setUserCodeEnabled)
 					{
-						// TO DO.
+						pinCell[0].innerHTML = '<input type="text" size="' + pinLength + '" value="' + userInfo.pin.escapeHTML()+ '"></input>';
+						if (actionCell[0].select('.caddx_useraction_setpin').length == 0)
+						{
+							// Add "Set PIN" button.
+							var setPinButton = document.createElement('input');
+							setPinButton.setAttribute('type', 'button');
+							setPinButton.setAttribute('value', 'Set PIN');
+							setPinButton.setAttribute('class', 'caddx_useraction_setpin');
+							//setPinButton.setAttribute('onclick', 'TODO');
+							actionCell[0].appendChild(document.createTextNode(' '));
+							actionCell[0].appendChild(setPinButton);
+						}
 					}
 					else
 					{
+						// Not allowed to edit the PIN.
 						pinCell[0].innerHTML = userInfo.pin;
 					}
 				}
@@ -1023,8 +1050,8 @@ function nameUser(u, text, device)
 // Delete variables for an existing user when the user clicks the "Hide" button.
 function hideExistingUser(u, button, device)
 {
-	button.disable();
-	button.parentNode.parentNode.select('.caddx_username')[0].disable();
+	// Grey out buttons.
+	button.parentNode.parentNode.select('input').invoke('disable');
 	// Can't actually delete.  Closest is to set to empty string.
 	set_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "User" + u, "", 0);
 	button.setValue("Hidden");
