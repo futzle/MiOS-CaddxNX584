@@ -969,7 +969,7 @@ function getScanUserResult(u, pinCell, authorizationCell, actionCell, setUserCod
 							setPinButton.setAttribute('type', 'button');
 							setPinButton.setAttribute('value', 'Set PIN');
 							setPinButton.setAttribute('class', 'caddx_useraction_setpin');
-							//setPinButton.setAttribute('onclick', 'TODO');
+							setPinButton.setAttribute('onclick', 'setUserPin(' + u + ',this,' + pinLength + ',' + device + ')');
 							actionCell[0].appendChild(document.createTextNode(' '));
 							actionCell[0].appendChild(setPinButton);
 						}
@@ -1036,6 +1036,85 @@ function getScanUserResult(u, pinCell, authorizationCell, actionCell, setUserCod
 		onFailure: function () {
 			if (pinCell.length > 0) pinCell[0].innerHTML = "Failed";
 			if (authorizationCell.length > 0) authorizationCell[0].innerHTML = "Failed"
+		}
+	});
+}
+
+function setUserPin(u, button, pinLength, device)
+{
+	var pinCell = button.parentNode.parentNode.select('.caddx_userpin');
+
+	var masterPin = $F('caddx_existingUsersMasterPin');
+    if (masterPin.length != pinLength) return;
+
+	var userPin = pinCell[0].select('input')[0].getValue();
+    if (userPin == "----" && 4 == pinLength) userPin = "";
+    if (userPin == "------" && 6 == pinLength) userPin = "";
+    if (userPin != "" && userPin.length != pinLength) return;
+
+	button.disable();
+	button.setValue("Setting");
+	new Ajax.Request("../port_3480/data_request", {
+		method: "get",
+		parameters: {
+			id: "lu_action",
+			serviceId: "urn:futzle-com:serviceId:CaddxNX584Security1",
+			action: "UserSetPIN",
+			User: u,
+			MasterPIN: masterPin,
+			UserPIN: userPin,
+			DeviceNum: device,
+			output_format: "json"
+		},
+		onSuccess: function (response) {
+			var jobId = response.responseText.evalJSON()["u:UserSetPINResponse"]["JobID"];
+			if (jobId == undefined)
+			{
+				button.setValue("Failed");
+				button.enable();
+			}
+			else
+			{
+				waitForSetUserPINJob.delay(0.5, jobId, button, device);
+			}
+		}, 
+		onFailure: function () {
+			button.setValue("Failed");
+			button.enable();
+		}
+	});
+}
+
+function waitForSetUserPINJob(jobId, button, device)
+{
+	new Ajax.Request("../port_3480/data_request", {
+		method: "get",
+		parameters: {
+			id: "jobstatus",
+			job: jobId,
+			output_format: "json"
+		},
+		onSuccess: function (response) {
+			var jobStatus = response.responseText.evalJSON()["status"];
+			if (jobStatus == 1 || jobStatus == 5)
+			{
+				// Repeat.  Hopefully not so many times as to overflow the stack.
+				waitForSetUserPINJob.delay(0.5, jobId, button, device);
+			}
+			else if (jobStatus == 2)
+			{
+				button.setValue("Failed");
+				button.enable();
+			}
+			else if (jobStatus == 4)
+			{
+				button.setValue("Success");
+				button.enable();
+			}
+		}, 
+		onFailure: function () {
+			button.setValue("Failed");
+			button.enable();
 		}
 	});
 }
