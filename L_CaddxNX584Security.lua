@@ -1628,7 +1628,7 @@ function jobUserSetPIN(lul_device, lul_settings, lul_job)
 	if (u == nil) then return 2, nil end
 
 	local userPIN = nil
-	if (lul_settings.UserPIN == nil) then
+	if (lul_settings.UserPIN == nil or lul_settings.UserPIN == "") then
 		-- Clear the PIN.
 		userPIN = string.char(255) .. string.char(255) .. string.char(255)
 	else
@@ -1646,7 +1646,7 @@ function jobUserSetPIN(lul_device, lul_settings, lul_job)
 				if (string.byte(string.sub(message,1)) == u) then
 					-- Check the returned PIN.
 					local pin = unpackPin(string.sub(message,2,4))
-					if ((pin == "----" or pin == "------") and lul_settings.UserPIN == nil
+					if ((pin == "----" or pin == "------") and (lul_settings.UserPIN == nil or lul_settings.UserPIN == "")
 						or pin == lul_settings.UserPIN) then
 						return pendingJobDone(getJobId(lul_job), 4)
 					end

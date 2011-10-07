@@ -37,13 +37,13 @@
 			"ControlType": "label",
 			"Label": {
 				"lang_tag": "lastlog",
-				"text": "Last Log:",
+				"text": "Last Log:"
 			},
 			"Display": {
 				"Top": "10",
 				"Left": "10",
 				"Width": "50",
-				"Height": "20",
+				"Height": "20"
 			}
 		},
 		{
@@ -134,7 +134,135 @@
     ],
     "DeviceType": "urn:schemas-futzle-com:device:CaddxNX584Security:1",
     "eventList": {
+        "event_1": {
+            "label": "Battery level changes",
+            "serviceId": "urn:micasaverde-com:serviceId:HaDevice1",
+            "argumentList": {
+                "argument_1": {
+                    "dataType": "ui1",
+                    "defaultValue": "",
+                    "allowedValueList": {
+                        "Low": "10",
+                        "OK": "100" 
+                    },
+                    "name": "BatteryLevel",
+                    "comparisson": "=",
+                    "prefix": "Battery is",
+                    "suffix": "" 
+                }
+            }
+        },
+        "event_2": {
+            "label": "Panel Log Event (no partition)",
+            "serviceId": "urn:futzle-com:serviceId:CaddxNX584Security1",
+            "argumentList": {
+                "argument_1": {
+                    "dataType": "ui1",
+                    "defaultValue": "",
+                    "allowedValueList": {
+                        "SpecialExpansionEvent": "17",
+                        "TelephoneFault": "34",
+                        "TelephoneFaultRestore": "35",
+                        "FailToCommunicate": "38",
+                        "LogFull": "39",
+                        "AutoTest": "44",
+                        "StartProgram": "45",
+                        "EndProgram": "46",
+                        "StartDownload": "47",
+                        "EndDownload": "48",
+                        "GroundFault": "50",
+                        "GroundFaultRestore": "51",
+                        "ManualTest": "52",
+                        "StartOfListenIn": "54",
+                        "TechnicianOnSite": "55",
+                        "TechnicianLeft": "56",
+                        "ControlPowerUp": "56",
+                        "BeginWalkTest": "123",
+                        "EndWalkTest": "124",
+                        "DataLost": "127"
+                    },
+                    "name": "LastLogEventID",
+                    "comparisson": "=",
+                    "prefix": "Event",
+                    "suffix": "" 
+                 }
+            }
+        },
+        "event_3": {
+            "label": "Panel Log Event (in partition)",
+            "serviceId": "urn:futzle-com:serviceId:CaddxNX584Security1",
+            "argumentList": {
+                "argument_1": {
+                    "dataType": "ui1",
+                    "defaultValue": "",
+                    "allowedValueList": {
+                        "Duress": "18",
+                        "ManualFire": "19",
+                        "Auxiliary2Panic": "20",
+                        "Panic": "22",
+                        "KeypadTamper": "23",
+                        "ReExit": "125"
+                    },
+                    "name": "LastLogEventID",
+                    "comparisson": "=",
+                    "prefix": "Event",
+                    "suffix": "" 
+                 },
+                 "argument_2": {
+                    "dataType": "ui1",
+                    "defaultValue": "1",
+                    "allowedValueList": {
+                        "Partition1": "1",
+                        "Partition2": "2",
+                        "Partition3": "3",
+                        "Partition4": "4",
+                        "Partition5": "5",
+                        "Partition6": "6",
+                        "Partition7": "7",
+                        "Partition8": "8"
+                    },
+                    "name": "LastLogEventPartition",
+                    "comparisson": "=",
+                    "prefix": "Partition",
+                    "suffix": "" 
+                 }
+            }
+        }
     },
     "sceneList": {
+        "group_1": {
+            "cmd_1": {
+                "label": "Set a User's PIN",
+                "serviceId": "urn:futzle-com:serviceId:CaddxNX584Security1",
+                "action": "UserSetPIN",
+                "argumentList": {
+                    "argument_1": {
+                        "dataType": "string",
+                        "defaultValue": "",
+                        "prefix": "Master PIN",
+                        "suffix": "",
+                        "name": "MasterPIN"
+                    },
+                    "argument_2": {
+                        "dataType": "ui1",
+                        "defaultValue": "",
+                        "allowedValueRange": {
+                            "minimum": "1",
+                            "maximum": "99"
+                        },
+                        "prefix": "User number",
+                        "suffix": "",
+                        "name": "User"
+                    },
+                    "argument_3": {
+                        "dataType": "string",
+                        "defaultValue": "",
+                        "prefix": "User PIN",
+                        "suffix": "",
+                        "name": "UserPIN"
+                    }
+                }
+            }
+        }
     }
 }
