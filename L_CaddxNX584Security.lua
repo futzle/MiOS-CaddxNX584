@@ -1319,7 +1319,10 @@ end
 
 -- callbackHandler(lul_request, lul_parameters, lul_outputformat)
 function callbackHandler(lul_request, lul_parameters, lul_outputformat)
-	if (lul_outputformat == "json") then
+	debug("callbackHandler: request " .. lul_request)
+	debug("callbackHandler: format " .. lul_outputformat)
+	-- Forwarder makes output format empty.
+	if (lul_outputformat ~= "xml") then
 		if (lul_request == "ZoneScan") then
 			local z = tonumber(lul_parameters.zone)
 			return "{ \"partitions\":\"" .. ZONE_SCAN[z].partitions .. "\" }"
