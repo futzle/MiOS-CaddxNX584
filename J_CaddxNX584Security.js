@@ -1021,7 +1021,7 @@ function getScanUserResult(u, pinCell, authorizationCell, actionCell, setUserCod
 						if (html != '') html = '<div>' + html + '</div>';
 						if (userInfo.authorization.outputEnable)
 						{
-							html += '<div>Output ' + userinfo.authorization.outputEnable + '</div>';
+							html += '<div>Output ' + userInfo.authorization.outputEnable + '</div>';
 						}
 						if (userInfo.partitions)
 						{
