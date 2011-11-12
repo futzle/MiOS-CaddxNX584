@@ -103,7 +103,7 @@
                     },
                     "Display": {
                         "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
-                        "Variable": "ArmMode",
+                        "Variable": "DetailedArmMode",
                         "Value": "Armed",
                         "Top": 80,
                         "Left": 130,
@@ -135,7 +135,7 @@
                     },
                     "Display": {
                         "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
-                        "Variable": "ArmMode",
+                        "Variable": "DetailedArmMode",
                         "Value": "Stay",
                         "Top": 80,
                         "Left": 190,
@@ -167,7 +167,7 @@
                     },
                     "Display": {
                         "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
-                        "Variable": "ArmMode",
+                        "Variable": "DetailedArmMode",
                         "Value": "Disarmed",
                         "Top": 80,
                         "Left": 250,
