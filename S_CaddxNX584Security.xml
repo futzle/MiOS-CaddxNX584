@@ -17,6 +17,7 @@
         <argument>
           <name>Zone</name>
           <direction>in</direction>
+          <relatedStateVariable>ui4</relatedStateVariable>
         </argument>
       </argumentList>
     </action>
@@ -26,6 +27,7 @@
         <argument>
           <name>Zone</name>
           <direction>in</direction>
+          <relatedStateVariable>ui4</relatedStateVariable>
         </argument>
       </argumentList>
     </action>
@@ -33,12 +35,14 @@
       <name>UserScan</name>
       <argumentList>
         <argument>
-          <name>User</name>
-          <direction>in</direction>
-        </argument>
-        <argument>
           <name>MasterPIN</name>
           <direction>in</direction>
+          <relatedStateVariable>string</relatedStateVariable>
+        </argument>
+        <argument>
+          <name>User</name>
+          <direction>in</direction>
+          <relatedStateVariable>ui4</relatedStateVariable>
         </argument>
       </argumentList>
     </action>
@@ -46,16 +50,19 @@
       <name>UserSetPIN</name>
       <argumentList>
         <argument>
-          <name>User</name>
-          <direction>in</direction>
-        </argument>
-        <argument>
           <name>MasterPIN</name>
           <direction>in</direction>
+          <relatedStateVariable>string</relatedStateVariable>
+        </argument>
+        <argument>
+          <name>User</name>
+          <direction>in</direction>
+          <relatedStateVariable>ui4</relatedStateVariable>
         </argument>
         <argument>
           <name>UserPIN</name>
           <direction>in</direction>
+          <relatedStateVariable>string</relatedStateVariable>
         </argument>
       </argumentList>
     </action>
@@ -65,6 +72,7 @@
         <argument>
           <name>StackPointer</name>
           <direction>in</direction>
+          <relatedStateVariable>ui4</relatedStateVariable>
         </argument>
       </argumentList>
     </action>
