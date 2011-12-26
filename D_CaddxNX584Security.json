@@ -6,6 +6,7 @@
     "imgIconMin": "pics\/devices\/Door_UNLOCKED.png",
     "imgIconMax": "pics\/devices\/Door_LOCKED.png",
     "halloIconsDir": "pics\/hallo",
+    "inScene": "0",
     "DisplayStatus": {
     },
     "doc_url": {
@@ -24,10 +25,20 @@
             },
             "Position": "0",
             "TabType": "flash",
+            "SceneGroup": [
+                {
+                    "id": 1,
+                    "top": 1,
+                    "left": 0,
+                    "x": 2,
+                    "y": 2
+                }
+            ],
             "ControlGroup": [
                 {
                     "id": "1",
-                    "type": "info"
+                    "type": "info",
+                    "scenegroup": 1
                 }
             ],
             "Control": [
@@ -35,26 +46,33 @@
 			"ControlGroup": "1",
 			"ControlHeader": "1",
 			"ControlType": "label",
+                        "top": 0,
+                        "left": 0,
+                        "text_align": "left",
 			"Label": {
 				"lang_tag": "lastlog",
 				"text": "Last Log:"
 			},
 			"Display": {
-				"Top": "10",
-				"Left": "10",
-				"Width": "50",
-				"Height": "20"
+				"Top": 10,
+				"Left": 10,
+				"Width": 50,
+				"Height": 20
 			}
 		},
 		{
 			"ControlGroup": "1",
 			"ControlHeader": "1",
 			"ControlType": "variable",
+                        "top": 0,
+                        "left": 0.8,
+                        "text_align": "left",
+                        "x": 1.2,
 			"Display": {
-				"Top": "10",
-				"Left": "80",
-				"Width": "150",
-				"Height": "20",
+				"Top": 10,
+				"Left": 80,
+				"Width": 150,
+				"Height": 20,
 				"Service": "urn:futzle-com:serviceId:CaddxNX584Security1",
 				"Variable": "LastLogEvent"
 			}
@@ -176,7 +194,7 @@
                         "StartOfListenIn": "54",
                         "TechnicianOnSite": "55",
                         "TechnicianLeft": "56",
-                        "ControlPowerUp": "56",
+                        "ControlPowerUp": "57",
                         "BeginWalkTest": "123",
                         "EndWalkTest": "124",
                         "DataLost": "127"
@@ -229,6 +247,158 @@
             }
         }
     },
+    "eventList2": [
+        {
+            "id": 1,
+            "label": {
+              "text": "Battery level changes",
+              "lang_tag": "battery_level_changes"
+            },
+            "serviceId": "urn:micasaverde-com:serviceId:HaDevice1",
+            "argumentList": [
+                {
+                    "id": 1,
+                    "dataType": "ui1",
+                    "defaultValue": "",
+                    "allowedValueList": [
+                        {
+                            "value": "10",
+                            "HumanFriendlyText": {
+                                "text": "Battery is low",
+                                "lang_tag": "hft_battery_is_low"
+                            }
+                        },
+                        {
+                            "value": "100",
+                            "HumanFriendlyText": {
+                                "text": "Battery is OK",
+                                "lang_tag": "hft_battery_is_ok"
+                            }
+                        }
+                    ],
+                    "name": "BatteryLevel",
+                    "comparisson": "=",
+                    "prefix": {
+                       "text": "Battery level",
+                       "lang_tag": "battery_level"
+                    },
+                    "suffix": {},
+                    "HumanFriendlyText": {
+                       "text": "_DEVICE_NAME_: Battery level: _ARGUMENT_VALUE_",
+                       "lang_tag": "hft_battery_level"
+                    }
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "label": {
+              "text": "Panel Log Event (no partition)",
+              "lang_tag": "panel_log_event_no_partition"
+            },
+            "serviceId": "urn:futzle-com:serviceId:CaddxNX584Security1",
+            "argumentList": [
+                {
+                    "id": 1,
+                    "dataType": "ui1",
+                    "defaultValue": "",
+                    "allowedValueList": [
+                        { "HumanFriendlyText": { "text": "Special Expansion Event", "lang_tag": "hft_event_17" }, "value": "17"},
+                        { "HumanFriendlyText": { "text": "Telephone Fault", "lang_tag": "hft_event_34" }, "value": "34"},
+                        { "HumanFriendlyText": { "text": "Telephone Fault Restore", "lang_tag": "hft_event_35" }, "value": "35"},
+                        { "HumanFriendlyText": { "text": "Fail To Communicate", "lang_tag": "hft_event_38" }, "value": "38"},
+                        { "HumanFriendlyText": { "text": "Log Full", "lang_tag": "hft_event_39" }, "value": "39"},
+                        { "HumanFriendlyText": { "text": "Auto Test", "lang_tag": "hft_event_44" }, "value": "44"},
+                        { "HumanFriendlyText": { "text": "Start Program", "lang_tag": "hft_event_45" }, "value": "45"},
+                        { "HumanFriendlyText": { "text": "End Program", "lang_tag": "hft_event_46" }, "value": "46"},
+                        { "HumanFriendlyText": { "text": "Start Download", "lang_tag": "hft_event_47" }, "value": "47"},
+                        { "HumanFriendlyText": { "text": "End Download", "lang_tag": "hft_event_48" }, "value": "48"},
+                        { "HumanFriendlyText": { "text": "Ground Fault", "lang_tag": "hft_event_50" }, "value": "50"},
+                        { "HumanFriendlyText": { "text": "Ground Fault Restore", "lang_tag": "hft_event_51" }, "value": "51"},
+                        { "HumanFriendlyText": { "text": "Manual Test", "lang_tag": "hft_event_52" }, "value": "52"},
+                        { "HumanFriendlyText": { "text": "Start Of ListenIn", "lang_tag": "hft_event_54" }, "value": "54"},
+                        { "HumanFriendlyText": { "text": "Technician On Site", "lang_tag": "hft_event_55" }, "value": "55"},
+                        { "HumanFriendlyText": { "text": "Technician Left", "lang_tag": "hft_event_56" }, "value": "56"},
+                        { "HumanFriendlyText": { "text": "Control Power Up", "lang_tag": "hft_event_57" }, "value": "57"},
+                        { "HumanFriendlyText": { "text": "Begin Walk Test", "lang_tag": "hft_event_123" }, "value": "123"},
+                        { "HumanFriendlyText": { "text": "End Walk Test", "lang_tag": "hft_event_124" }, "value": "124"},
+                        { "HumanFriendlyText": { "text": "Data Lost", "lang_tag": "hft_event_127" }, "value": "127"}
+                    ],
+                    "name": "LastLogEventID",
+                    "comparisson": "=",
+                    "prefix": {
+                       "text": "Event",
+                       "lang_tag": "event"
+                    },
+                    "suffix": {},
+                    "HumanFriendlyText": {
+                       "text": "_DEVICE_NAME_: Event: _ARGUMENT_VALUE_",
+                       "lang_tag": "hft_event"
+                    }
+                 }
+            ]
+        },
+        {
+            "id": 3,
+            "label": {
+              "text": "Panel Log Event (in partition)",
+              "lang_tag": "panel_log_event_in_partition"
+            },
+            "serviceId": "urn:futzle-com:serviceId:CaddxNX584Security1",
+            "argumentList": [
+                {
+                    "id": 1,
+                    "dataType": "ui1",
+                    "defaultValue": "",
+                    "allowedValueList": [
+                        { "HumanFriendlyText": { "text": "Duress", "lang_tag": "hft_event_18" }, "value": "18"},
+                        { "HumanFriendlyText": { "text": "Manual Fire", "lang_tag": "hft_event_19" }, "value": "19"},
+                        { "HumanFriendlyText": { "text": "Auxiliary 2 Panic", "lang_tag": "hft_event_20" }, "value": "20"},
+                        { "HumanFriendlyText": { "text": "Panic", "lang_tag": "hft_event_22" }, "value": "22"},
+                        { "HumanFriendlyText": { "text": "Keypad Tamper", "lang_tag": "hft_event_23" }, "value": "23"},
+                        { "HumanFriendlyText": { "text": "Re-exit", "lang_tag": "hft_event_125" }, "value": "125"}
+                    ],
+                    "name": "LastLogEventID",
+                    "comparisson": "=",
+                    "prefix": {
+                       "text": "Event",
+                       "lang_tag": "event"
+                    },
+                    "suffix": {},
+                    "HumanFriendlyText": {
+                       "text": "_DEVICE_NAME_: Event: _ARGUMENT_VALUE_",
+                       "lang_tag": "hft_event"
+                    }
+                 },
+                 {
+                    "id": 2,
+                    "dataType": "ui1",
+                    "defaultValue": "1",
+                    "allowedValueList": [
+                        { "HumanFriendlyText": { "text": "Partition 1", "lang_tag": "hft_event_partition_1" }, "value": "1"},
+                        { "HumanFriendlyText": { "text": "Partition 2", "lang_tag": "hft_event_partition_2" }, "value": "2"},
+                        { "HumanFriendlyText": { "text": "Partition 3", "lang_tag": "hft_event_partition_3" }, "value": "3"},
+                        { "HumanFriendlyText": { "text": "Partition 4", "lang_tag": "hft_event_partition_4" }, "value": "4"},
+                        { "HumanFriendlyText": { "text": "Partition 5", "lang_tag": "hft_event_partition_5" }, "value": "5"},
+                        { "HumanFriendlyText": { "text": "Partition 6", "lang_tag": "hft_event_partition_6" }, "value": "6"},
+                        { "HumanFriendlyText": { "text": "Partition 7", "lang_tag": "hft_event_partition_7" }, "value": "7"},
+                        { "HumanFriendlyText": { "text": "Partition 8", "lang_tag": "hft_event_partition_8" }, "value": "8"}
+                    ],
+                    "name": "LastLogEventPartition",
+                    "comparisson": "=",
+                    "prefix": {
+                       "text": "Partition",
+                       "lang_tag": "partition"
+                    },
+                    "suffix": {},
+                    "HumanFriendlyText": {
+                       "text": "_DEVICE_NAME_: Partition: _ARGUMENT_VALUE_",
+                       "lang_tag": "hft_partition"
+                    }
+                 }
+            ]
+        }
+    ],
     "sceneList": {
         "group_1": {
             "cmd_1": {
