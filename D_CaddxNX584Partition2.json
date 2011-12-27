@@ -7,7 +7,7 @@
     "imgIconMax": "pics\/devices\/Door_LOCKED.png",
     "halloIconsDir": "pics\/hallo",
     "inScene": "1",
-    "x": 3,
+    "x": 2,
     "y": 3,
     "DisplayStatus": {
         "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
@@ -36,22 +36,15 @@
                 "id": "1",
                 "top": "0",
                 "left": "0",
-                "x": "3",
+                "x": "2",
                 "y": "1"
               },
               {
                 "id": "2",
                 "top": "1",
                 "left": "0",
-                "x": "3",
-                "y": "1"
-              },
-              {
-                "id": "3",
-                "top": "2",
-                "left": "0",
-                "x": "3",
-                "y": "1"
+                "x": "2",
+                "y": "2"
               }
             ],
             "ControlGroup": [
@@ -61,12 +54,12 @@
                     "scenegroup": "1"
                 },
                 {
-                    "id": "2",
+                    "id": "3",
+                    "isSingle": "0",
                     "scenegroup": "2"
                 },
                 {
-                    "id": "3",
-                    "scenegroup": "3"
+                    "id": "2"
                 }
             ],
             "Control": [
@@ -93,7 +86,7 @@
                     "ControlHeader": "1",
                     "ControlType": "variable",
                     "top": 0.2,
-                    "left": 0.8,
+                    "left": 0.6,
                     "text_align": "left",
                     "Display": {
                         "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
@@ -118,12 +111,10 @@
                     },
                 },
                 {
-                    "ControlGroup": "1",
+                    "ControlGroup": "2",
                     "ControlHeader": "1",
                     "ControlPair": "1",
                     "ControlType": "input",
-                    "top": 0,
-                    "left": 2,
                     "ID": "PINCode",
                     "Display": {
                         "Top": 80,
@@ -136,8 +127,6 @@
                     "ControlGroup": "2",
                     "ControlPair": "1",
                     "ControlType": "button",
-                    "top": 0,
-                    "left": 0,
                     "Label": {
                         "lang_tag": "cmd_set",
                         "text": "Arm"
@@ -170,8 +159,6 @@
                     "ControlGroup": "2",
                     "ControlPair": "1",
                     "ControlType": "button",
-                    "top": 0,
-                    "left": 1,
                     "Label": {
                         "lang_tag": "cmd_set",
                         "text": "Stay"
@@ -204,8 +191,6 @@
                     "ControlGroup": "2",
                     "ControlPair": "1",
                     "ControlType": "button",
-                    "top": 0,
-                    "left": 2,
                     "Label": {
                         "lang_tag": "cmd_set",
                         "text": "Disarm"
@@ -235,6 +220,66 @@
                     }
                 },
                 {
+                    "ControlGroup": "3",
+                    "ControlType": "button",
+                    "top": 0,
+                    "left": 0,
+                    "no_control_panel": "1",
+                    "Label": {
+                        "lang_tag": "cmd_set",
+                        "text": "Arm"
+                    },
+                    "Display": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Variable": "DetailedArmMode",
+                        "Value": "Armed"
+                    },
+                    "Command": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Action": "RequestArmMode",
+                        "Parameters": [
+                            {
+                                "Name": "State",
+                                "Value": "Armed"
+                            },
+                            {
+                                "Name": "PINCode",
+                                "Value": ""
+                            }
+                        ]
+                    }
+                },
+                {
+                    "ControlGroup": "3",
+                    "ControlType": "button",
+                    "top": 1,
+                    "left": 0,
+                    "no_control_panel": "1",
+                    "Label": {
+                        "lang_tag": "cmd_set",
+                        "text": "Stay"
+                    },
+                    "Display": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Variable": "DetailedArmMode",
+                        "Value": "Stay"
+                    },
+                    "Command": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Action": "RequestArmMode",
+                        "Parameters": [
+                            {
+                                "Name": "State",
+                                "Value": "Stay"
+                            },
+                            {
+                                "Name": "PINCode",
+                                "Value": ""
+                            }
+                        ]
+                    }
+                },
+                {
                     "ControlType": "label",
                     "Label": {
                         "lang_tag": "device_settings_page",
@@ -248,7 +293,6 @@
                     }
                 },
                 {
-                    "ControlGroup": "3",
                     "ControlType": "button",
                     "top": 0,
                     "left": 0,
@@ -274,7 +318,6 @@
                     }
                 },
                 {
-                    "ControlGroup": "3",
                     "ControlType": "button",
                     "top": 0,
                     "left": 1,
@@ -300,7 +343,6 @@
                     }
                 },
                 {
-                    "ControlGroup": "3",
                     "ControlType": "button",
                     "top": 0,
                     "left": 2,
