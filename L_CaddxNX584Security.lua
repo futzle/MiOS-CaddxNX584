@@ -215,7 +215,7 @@ function caddxInitialize(deviceId)
 			luup.io.open(ROOT_DEVICE, ipv4, tcpport)
 		else
 			luup.log("No serial device specified; exiting")
-			return false, "No serial device specified. Visit the Connection tab and choose how the device is attached.", string.format("%s[%d]", luup.devices[ROOT_DEVICE].description, ROOT_DEVICE)
+			return false, "No serial device specified. Visit the Connect tab and choose how the device is attached.", string.format("%s[%d]", luup.devices[ROOT_DEVICE].description, ROOT_DEVICE)
 		end
 	else
 		luup.log("Opening serial port")
@@ -344,7 +344,8 @@ function caddxInitialize(deviceId)
 	
 	-- No zones? Warn the user.
 	if (zoneCount == 0) then
-		return false, "No zones defined. Visit the Zones tab to add them.", string.format("%s[%d]", luup.devices[ROOT_DEVICE].description, ROOT_DEVICE)
+		-- Bug in MiOS prevents this from displaying.
+		luup.task("No zones defined. Visit the Zones tab to add them.", 1, string.format("%s[%d]", luup.devices[ROOT_DEVICE].description, ROOT_DEVICE))
 	end
 
 	-- Initializtion complete.
