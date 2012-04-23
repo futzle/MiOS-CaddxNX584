@@ -39,7 +39,7 @@
 module ("L_CaddxNX584Security", package.seeall)
 
 ALARM_SERVICEID = "urn:futzle-com:serviceId:CaddxNX584Security1"
-ALARM_PARTITION_SERVICEID = "urn:micasaverde-com:serviceId:AlarmPartition1"
+ALARM_PARTITION_SERVICEID = "urn:micasaverde-com:serviceId:AlarmPartition2"
 ALARM_ZONE_SERVICEID = "urn:micasaverde-com:serviceId:SecuritySensor1"
 
 INCOMING_EXPECTING_START = 0	   -- Between messages
@@ -118,15 +118,13 @@ LOG_MESSAGE_USER = {
 	[53] = "Closed with zones bypassed (User %d Partition %d)",
 	[120] = "First to open (User %d Partition %d)",
 	[121] = "Last to close (User %d Partition %d)",
-	[121] = "Last to close (User %d Partition %d)",
 	[122] = "PIN entered with bit 7 set (User %d Partition %d)",
 	[123] = "Output trip (User %d)",
 }
 
 --
--- Utility functions for bitwise operations.
+-- Map Partition and Zone numbers to device Ids
 --
-
 -- Thanks to guessed for this snippet.
 function findChild(deviceId, label)
 	for k, v in pairs(luup.devices) do
@@ -135,6 +133,26 @@ function findChild(deviceId, label)
 		end
 	end
 end
+
+function partitionName(p)
+	return "Partition-" .. p .. "bis"
+end
+
+function findPartition(parent, p)
+	return findChild(parent, partitionName(p))
+end
+
+function zoneName(z)
+	return "Zone-" .. z
+end
+
+function findZone(parent, z)
+	return findChild(parent, zoneName(z))
+end
+
+--
+-- Utility functions for bitwise operations.
+--
 
 -- bitMask(val, pos)
 -- Poor man's bitwise operation: return true if a bit is set, false if clear.
@@ -177,7 +195,6 @@ end
 -- - Get a list of valid partitions.
 function caddxInitialize(deviceId)
 	luup.log("Initializing Caddx NX-584")
-	luup.io.intercept()
 
 	-- Remember parent device ID.
 	ROOT_DEVICE = deviceId
@@ -185,6 +202,27 @@ function caddxInitialize(deviceId)
 	if (luup.variable_get(ALARM_SERVICEID, "Debug", ROOT_DEVICE) == "1") then
 		LOG_DEBUG = true
 	end
+
+	-- Run from serial device (including IPSerial) or open a socket? 
+	local ioDevice = luup.variable_get("urn:micasaverde-com:serviceId:HaDevice1", "IODevice", ROOT_DEVICE)
+	local useSocket = false
+	if (ioDevice == nil or ioDevice == "") then useSocket = true end
+	if (useSocket) then
+		local ip = luup.devices[ROOT_DEVICE].ip
+		local ipv4, tcpport = ip:match("(%d+%.%d+%.%d+%.%d+):(%d+)")
+		if (ipv4 ~= nil and tcpport ~= nil) then
+			luup.log(string.format("Opening socket to %s port %s", ipv4, tcpport))
+			luup.io.open(ROOT_DEVICE, ipv4, tcpport)
+		else
+			luup.log("No serial device specified; exiting")
+			return false, "No serial device specified. Visit the Connection tab and choose how the device is attached.", string.format("%s[%d]", luup.devices[ROOT_DEVICE].description, ROOT_DEVICE)
+		end
+	else
+		luup.log("Opening serial port")
+	end
+
+	-- Help prevent race condition
+	luup.io.intercept()
 
 	-- Incoming byte state machine initialization.
 	RECEIVE_STATE = INCOMING_EXPECTING_START
@@ -197,7 +235,7 @@ function caddxInitialize(deviceId)
 	-- able to respond to the requests we'll give it.
 	if (not setUpInterface(ROOT_DEVICE)) then
 		luup.set_failure(true, ROOT_DEVICE)
-		return false, "Failed to set up interface", "Caddx NX-584"
+		return false, "Failed to set up interface", string.format("%s[%d]", luup.devices[ROOT_DEVICE].description, ROOT_DEVICE)
 	end
 
 	-- Set the clock on the interface.
@@ -209,8 +247,11 @@ function caddxInitialize(deviceId)
 	-- Includes: faults; 4- or 6-digit PIN; list of valid partitions.
 	if (not getSystemStatus(ROOT_DEVICE)) then
 		luup.set_failure(true, ROOT_DEVICE)
-		return false, "Failed to get initial status", "Caddx NX-584"
+		return false, "Failed to get initial status", string.format("%s[%d]", luup.devices[ROOT_DEVICE].description, ROOT_DEVICE)
 	end
+
+	-- Set the device category. 22 is "alarm panel".
+	luup.attr_set("category_num", 22, k)
 
 	-- Start enumerating child devices.
 	local childDevices = luup.chdev.start(ROOT_DEVICE)
@@ -243,8 +284,10 @@ function caddxInitialize(deviceId)
 	-- Get information about each zone.
 	ZONE_STATUS = {}
 	ZONE_VALID = {}
+	zoneCount = 0
 	for zone = 1,48 do
 		if (setUpZone(ROOT_DEVICE, childDevices, zone)) then
+			zoneCount = zoneCount + 1
 			ZONE_VALID[zone] = true
 			ZONE_STATUS[zone] = { }
 		end
@@ -256,12 +299,16 @@ function caddxInitialize(deviceId)
 	-- Set the initial states for each partition based on the
 	-- information we've collected.
 	for partition, _ in pairs(PARTITION_VALID) do
+		-- Set the device category. 23 is "alarm partition".
+		luup.attr_set("category_num", 23, findPartition(ROOT_DEVICE, partition))
 		updatePartitionDevice(ROOT_DEVICE, partition)
 	end
 
 	-- Set the initial states for each zone based on the
 	-- information we've collected.
 	for zone, _ in pairs(ZONE_VALID) do
+		-- Set the device category. 4 is "security sensor".
+		luup.attr_set("category_num", 4, findZone(ROOT_DEVICE, zone))
 		updateZoneDevice(ROOT_DEVICE, zone)
 	end
 
@@ -295,7 +342,13 @@ function caddxInitialize(deviceId)
 	JOBS_PENDING_SEND_HEAD = 1
 	JOBS_PENDING_SEND_TAIL = 0
 	
+	-- No zones? Warn the user.
+	if (zoneCount == 0) then
+		return false, "No zones defined. Visit the Zones tab to add them.", string.format("%s[%d]", luup.devices[ROOT_DEVICE].description, ROOT_DEVICE)
+	end
+
 	-- Initializtion complete.
+	return true
 end
 
 -- sendMessageAndHandleResponse(deviceId, message, handlers)
@@ -528,7 +581,7 @@ function setUpPartition(deviceId, childDevices, p)
 					PARTITION_STATUS[p]["name"] = "Partition " .. p
 					luup.chdev.append(
 						ROOT_DEVICE, childDevices,
-						"Partition-" .. p, PARTITION_STATUS[p]["name"],
+						partitionName(p), PARTITION_STATUS[p]["name"],
 						"urn:schemas-futzle-com:device:CaddxNX584Partition:2", "D_CaddxNX584Partition2.xml",
 						"", "", true
 					)
@@ -566,7 +619,7 @@ function setUpZone(deviceId, childDevices, z)
 			debug(string.format("Zone %d (%s): %s", z, deviceName, deviceFile))
 		luup.chdev.append(
 			ROOT_DEVICE, childDevices,
-			"Zone-" .. z, deviceName,
+			zoneName(z), deviceName,
 			"", deviceFile,
 			"I_CaddxNX584Security.xml", "", false
 		)
@@ -691,7 +744,7 @@ end
 function updatePartitionDevice(deviceId, partition)
 	if (partition ~= nil) then
 		debug("Setting state for partition " .. partition)
-		local partitionDevice = findChild(ROOT_DEVICE, "Partition-" .. partition)
+		local partitionDevice = findPartition(ROOT_DEVICE, partition)
 		if (partitionDevice == nil) then return end
 
 		-- Create a variable on the alarm interface matching the user who
@@ -743,7 +796,7 @@ end
 function updateZoneDevice(deviceId, zone)
 	if (zone ~= nil) then
 		debug("Setting state for zone " .. zone)
-		local zoneDevice = findChild(ROOT_DEVICE, "Zone-" .. zone)
+		local zoneDevice = findZone(ROOT_DEVICE, zone)
 		if (zoneDevice == nil) then return end
 
 		local tripped = ZONE_STATUS[zone]["isFaulted"] and "1" or "0"

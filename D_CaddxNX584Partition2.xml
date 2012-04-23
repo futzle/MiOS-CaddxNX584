@@ -28,9 +28,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
     <serviceList>
       <service>
         <serviceType>urn:schemas-micasaverde-com:service:AlarmPartition:2</serviceType>
-        <serviceId>urn:micasaverde-com:serviceId:AlarmPartition1</serviceId>
-        <controlURL>/upnp/control/AlarmPartition1</controlURL>
-        <eventSubURL>/upnp/event/AlarmPartition1</eventSubURL>
+        <serviceId>urn:micasaverde-com:serviceId:AlarmPartition2</serviceId>
+        <controlURL>/upnp/control/AlarmPartition2</controlURL>
+        <eventSubURL>/upnp/event/AlarmPartition2</eventSubURL>
         <SCPDURL>S_AlarmPartition2.xml</SCPDURL>
       </service>
     </serviceList>

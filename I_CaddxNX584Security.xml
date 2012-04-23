@@ -111,7 +111,7 @@ end
 			</incoming>
 		</action>
 		<action>
-			<serviceId>urn:micasaverde-com:serviceId:AlarmPartition1</serviceId>
+			<serviceId>urn:micasaverde-com:serviceId:AlarmPartition2</serviceId>
 			<name>RequestQuickArmMode</name>
 			<job>
 				return plugin.jobRequestQuickArmMode(lul_device, lul_settings, lul_job)
@@ -121,7 +121,7 @@ end
 			</incoming>
 		</action>
 		<action>
-			<serviceId>urn:micasaverde-com:serviceId:AlarmPartition1</serviceId>
+			<serviceId>urn:micasaverde-com:serviceId:AlarmPartition2</serviceId>
 			<name>RequestArmMode</name>
 			<job>
 				return plugin.jobRequestArmMode(lul_device, lul_settings, lul_job)
@@ -131,7 +131,7 @@ end
 			</incoming>
 		</action>
 		<action>
-			<serviceId>urn:micasaverde-com:serviceId:AlarmPartition1</serviceId>
+			<serviceId>urn:micasaverde-com:serviceId:AlarmPartition2</serviceId>
 			<name>RequestPanicMode</name>
 			<job>
 				return plugin.jobRequestPanicMode(lul_device, lul_settings, lul_job)

@@ -10,7 +10,7 @@
     "x": 2,
     "y": 3,
     "DisplayStatus": {
-        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+        "Service": "urn:micasaverde-com:serviceId:AlarmPartition2",
         "Variable": "ArmMode",
         "MinValue": "Disarmed",
         "MaxValue": "Armed"
@@ -89,7 +89,7 @@
                     "left": 0.6,
                     "text_align": "left",
                     "Display": {
-                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition2",
                         "Variable": "DetailedArmMode",
                         "Top": 20,
                         "Left": 50,
@@ -132,7 +132,7 @@
                         "text": "Arm"
                     },
                     "Display": {
-                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition2",
                         "Variable": "DetailedArmMode",
                         "Value": "Armed",
                         "Top": 80,
@@ -141,7 +141,7 @@
                         "Height": 20
                     },
                     "Command": {
-                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition2",
                         "Action": "RequestArmMode",
                         "Parameters": [
                             {
@@ -164,7 +164,7 @@
                         "text": "Stay"
                     },
                     "Display": {
-                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition2",
                         "Variable": "DetailedArmMode",
                         "Value": "Stay",
                         "Top": 80,
@@ -173,7 +173,7 @@
                         "Height": 20
                     },
                     "Command": {
-                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition2",
                         "Action": "RequestArmMode",
                         "Parameters": [
                             {
@@ -196,7 +196,7 @@
                         "text": "Disarm"
                     },
                     "Display": {
-                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition2",
                         "Variable": "DetailedArmMode",
                         "Value": "Disarmed",
                         "Top": 80,
@@ -205,7 +205,7 @@
                         "Height": 20
                     },
                     "Command": {
-                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition2",
                         "Action": "RequestArmMode",
                         "Parameters": [
                             {
@@ -230,12 +230,12 @@
                         "text": "Arm"
                     },
                     "Display": {
-                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition2",
                         "Variable": "DetailedArmMode",
                         "Value": "Armed"
                     },
                     "Command": {
-                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition2",
                         "Action": "RequestArmMode",
                         "Parameters": [
                             {
@@ -260,12 +260,12 @@
                         "text": "Stay"
                     },
                     "Display": {
-                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition2",
                         "Variable": "DetailedArmMode",
                         "Value": "Stay"
                     },
                     "Command": {
-                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition2",
                         "Action": "RequestArmMode",
                         "Parameters": [
                             {
@@ -307,7 +307,7 @@
                         "Height": 20
                     },
                     "Command": {
-                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition2",
                         "Action": "RequestPanicMode",
                         "Parameters": [
                             {
@@ -332,7 +332,7 @@
                         "Height": 20
                     },
                     "Command": {
-                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition2",
                         "Action": "RequestPanicMode",
                         "Parameters": [
                             {
@@ -357,7 +357,7 @@
                         "Height": 20
                     },
                     "Command": {
-                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition2",
                         "Action": "RequestPanicMode",
                         "Parameters": [
                             {
@@ -383,7 +383,7 @@
                 {
                     "ControlType": "variable",
                     "Display": {
-                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition2",
                         "Variable": "VendorStatus",
                         "Top": 240,
                         "Left": 50,
@@ -394,7 +394,7 @@
                 {
                     "ControlType": "variable",
                     "Display": {
-                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition2",
                         "Variable": "VendorStatusCode",
                         "Top": 260,
                         "Left": 50,
@@ -405,7 +405,7 @@
                 {
                     "ControlType": "variable",
                     "Display": {
-                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition2",
                         "Variable": "VendorStatusData",
                         "Top": 280,
                         "Left": 50,
@@ -450,7 +450,7 @@
     "eventList": {
         "event_1": {
             "label": "Armed state",
-            "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+            "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition2",
             "argumentList" : {
                 "argument_1" : {
                     "dataType": "string",
@@ -468,7 +468,7 @@
         },
         "event_2": {
             "label": "Armed detailed state",
-            "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+            "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition2",
             "argumentList" : {
                 "argument_1" : {
                     "dataType": "string",
@@ -497,7 +497,7 @@
         },
         "event_3": {
             "label": "Alarm Active",
-            "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+            "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition2",
             "argumentList" : {
                 "argument_1" : {
                     "dataType": "string",
@@ -515,7 +515,7 @@
         },
         "event_4": {
             "label": "A PIN Code is entered",
-            "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+            "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition2",
             "argumentList" : {
                 "argument_1" : {
                     "dataType": "string",
@@ -529,7 +529,7 @@
         },
         "event_5": {
             "label": "Vendor Status Code",
-            "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+            "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition2",
             "argumentList" : {
                 "argument_1" : {
                     "dataType": "string",
@@ -549,7 +549,7 @@
                "text": "Armed state",
                "lang_tag": "armed_state"
             },
-            "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+            "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition2",
             "argumentList" : [
                 {
                     "id": 1,
@@ -591,7 +591,7 @@
               "text": "Armed detailed state",
               "lang_tag": "armed_detailed_state"
             },
-            "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+            "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition2",
             "argumentList" : [
                 {
                     "id": 1,
@@ -668,7 +668,7 @@
                "text": "Alarm Active",
                "lang_tag": "alarm_active"
             },
-            "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+            "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition2",
             "argumentList" : [
                 {
                     "id": 1,
@@ -710,7 +710,7 @@
               "text": "A PIN Code is entered",
               "lang_tag": "pin_code_entered"
             },
-            "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+            "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition2",
             "argumentList" : [
                 {
                     "id": 1,
@@ -736,7 +736,7 @@
               "text": "Vendor Status Code",
               "lang_tag": "vendor_status_code"
             },
-            "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+            "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition2",
             "argumentList" : [
                 {
                     "id": 1,
@@ -761,7 +761,7 @@
         "group_1": {
             "cmd_1": {
                 "label": "Set Partition ... (PIN)",
-                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition2",
                 "action": "RequestArmMode",
                 "argumentList": {
                     "argument_1": {
@@ -789,7 +789,7 @@
         "group_2": {
             "cmd_2": {
                 "label": "Set Partition Armed (No PIN)",
-                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition2",
                 "action": "RequestArmMode",
                 "arguments": {
                     "State": "Armed"
@@ -797,7 +797,7 @@
             },
             "cmd_3": {
                 "label": "Set Partition Stay (No PIN)",
-                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition2",
                 "action": "RequestArmMode",
                 "arguments": {
                     "State": "Stay"
@@ -807,7 +807,7 @@
         "group_3": {
             "cmd_1": {
                 "label": "Request Medical Panic",
-                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition2",
                 "action": "RequestPanicMode",
                 "arguments": {
                     "State": "Medical"
@@ -815,7 +815,7 @@
             },
             "cmd_2": {
                 "label": "Request Police Panic",
-                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition2",
                 "action": "RequestPanicMode",
                 "arguments": {
                     "State": "Police"
@@ -823,7 +823,7 @@
             },
             "cmd_3": {
                 "label": "Request Fire Panic",
-                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition1",
+                "serviceId": "urn:micasaverde-com:serviceId:AlarmPartition2",
                 "action": "RequestPanicMode",
                 "arguments": {
                     "State": "Fire"
