@@ -35,7 +35,6 @@ function caddxInitialize(lul_device)
 	-- For when jobs are complete, get the results.
 	-- Tunnel through from the plugin package to the top level.
 	callbackHandler = plugin.callbackHandler
-	handleReadByteResult = plugin.handleReadByteResult
 	-- Call initialization code.
 	return plugin.caddxInitialize(lul_device)
 end
@@ -43,7 +42,7 @@ end
 
 	<incoming>
 		<lua>
-			handleReadByteResult(nil, lul_device, plugin.readByte(lul_data))
+			plugin.handleReadByteResult(nil, lul_device, plugin.readByte(lul_data))
 		</lua>
 	</incoming>
 
