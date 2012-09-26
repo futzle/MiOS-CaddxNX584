@@ -260,26 +260,21 @@ function caddxInitialize(deviceId)
 	PARTITION_STATUS = {}
 	PARTITION_CONFIGURED = {}
 	for partition, _ in pairs(PARTITION_VALID) do
-		PARTITION_CONFIGURED[partition] = false
-		PARTITION_STATUS[partition] = {}
-	end
-	repeat
 		-- Do this until we are satisfied that we are done.
 		-- This is complicated by the fact that the alarm system
 		-- may send asynchronous events while we are learning its
 		-- configuration.  Perversely, we may get an asynchronous
 		-- message about partition x when we just asked about partition y.
-		local done = true
-		for partition, configured in pairs(PARTITION_CONFIGURED) do
-			if (not configured) then
-				debug("Setting up partition " .. partition)
-				done = false
-				if (setUpPartition(ROOT_DEVICE, childDevices, partition)) then
-					PARTITION_CONFIGURED[partition] = true
-				end
+		debug("Setting up partition " .. partition)
+		PARTITION_STATUS[partition] = {}
+		local done = false
+		repeat
+			if (setUpPartition(ROOT_DEVICE, childDevices, partition)) then
+				done = true
+				PARTITION_CONFIGURED[partition] = true
 			end
-		end
-	until done == true
+		until done == true
+	end
 
 	-- Get information about each zone.
 	ZONE_STATUS = {}
