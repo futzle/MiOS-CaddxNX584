@@ -673,10 +673,13 @@ function processZoneStatusMessage(message)
 	local zone = string.byte(string.sub(message,1)) + 1
 	local partitions = bitAnd(string.byte(string.sub(message,2)), VALID_PARTITIONS_BITMASK)
 	if (partitions ~= 0) then
-		debug(string.format("Valid zone %d", zone))
-		ZONE_VALID[zone] = true
-		ZONE_STATUS[zone]["isFaulted"] = bitMask(string.byte(string.sub(message,6)), 1)
-		ZONE_STATUS[zone]["isBypassed"] = bitMask(string.byte(string.sub(message,6)), 8)
+		if (ZONE_VALID[zone]) then
+			debug(string.format("Valid zone %d", zone))
+			ZONE_STATUS[zone]["isFaulted"] = bitMask(string.byte(string.sub(message,6)), 1)
+			ZONE_STATUS[zone]["isBypassed"] = bitMask(string.byte(string.sub(message,6)), 8)
+		else
+			debug(string.format("Ignoring invalid zone %d", zone))
+		end
 	end
 	return zone
 end
