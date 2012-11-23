@@ -303,7 +303,20 @@ function caddxInitialize(deviceId)
 	-- information we've collected.
 	for zone, _ in pairs(ZONE_VALID) do
 		-- Set the device category. 4 is "security sensor".
-		luup.attr_set("category_num", 4, findZone(ROOT_DEVICE, zone))
+		local zoneDevice = findZone(ROOT_DEVICE, zone)
+		luup.attr_set("category_num", 4, zoneDevice)
+    if (ZONE_STATUS[zone]["isFaulted"] == nil) then
+      -- No knowledge of the current state.
+			-- Use child state as best guess.
+			local tripped = luup.variable_get(ALARM_ZONE_SERVICEID, "Tripped", zoneDevice)
+			ZONE_STATUS[zone]["isFaulted"] = (tripped == "1")
+    end
+    if (ZONE_STATUS[zone]["isBypassed"] == nil) then
+      -- No knowledge of the current state.
+			-- Use child state as best guess.
+			local armed = luup.variable_get(ALARM_ZONE_SERVICEID, "Armed", zoneDevice)
+			ZONE_STATUS[zone]["isBypassed"] = (armed == "0")
+    end
 		updateZoneDevice(ROOT_DEVICE, zone)
 	end
 
@@ -798,14 +811,18 @@ function updateZoneDevice(deviceId, zone)
 		local zoneDevice = findZone(ROOT_DEVICE, zone)
 		if (zoneDevice == nil) then return end
 
-		local tripped = ZONE_STATUS[zone]["isFaulted"] and "1" or "0"
-		debug("Tripped: " .. tripped)
-		luup.variable_set(ALARM_ZONE_SERVICEID, "Tripped", tripped, zoneDevice)
+    if (ZONE_STATUS[zone]["isFaulted"] ~= nil) then
+			local tripped = ZONE_STATUS[zone]["isFaulted"] and "1" or "0"
+			debug("Tripped: " .. tripped)
+			luup.variable_set(ALARM_ZONE_SERVICEID, "Tripped", tripped, zoneDevice)
+		end
 
 		-- Invert logic because alarm panel speaks of "is bypassed".
-		local armed = ZONE_STATUS[zone]["isBypassed"] and "0" or "1"
-		debug("Armed: " .. armed)
-		luup.variable_set(ALARM_ZONE_SERVICEID, "Armed", armed, zoneDevice)
+    if (ZONE_STATUS[zone]["isBypassed"] ~= nil) then
+			local armed = ZONE_STATUS[zone]["isBypassed"] and "0" or "1"
+			debug("Armed: " .. armed)
+			luup.variable_set(ALARM_ZONE_SERVICEID, "Armed", armed, zoneDevice)
+		end
 	end
 end
 
