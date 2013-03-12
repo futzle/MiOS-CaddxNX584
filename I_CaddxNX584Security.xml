@@ -56,7 +56,7 @@ end
 				return plugin.jobZoneScan(lul_device, lul_settings, lul_job)
 			</job>
 			<incoming>
-				return handleReadByteResult(lul_job, lul_device, plugin.readByte(lul_data))
+				return plugin.handleReadByteResult(lul_job, lul_device, plugin.readByte(lul_data))
 			</incoming>
 		</action>
 		<action>
@@ -66,7 +66,7 @@ end
 				return plugin.jobZoneNameScan(lul_device, lul_settings, lul_job)
 			</job>
 			<incoming>
-				return handleReadByteResult(lul_job, lul_device, plugin.readByte(lul_data))
+				return plugin.handleReadByteResult(lul_job, lul_device, plugin.readByte(lul_data))
 			</incoming>
 		</action>
 		<action>
@@ -76,7 +76,7 @@ end
 				return plugin.jobUserScan(lul_device, lul_settings, lul_job)
 			</job>
 			<incoming>
-				return handleReadByteResult(lul_job, lul_device, plugin.readByte(lul_data))
+				return plugin.handleReadByteResult(lul_job, lul_device, plugin.readByte(lul_data))
 			</incoming>
 		</action>
 		<action>
@@ -86,7 +86,7 @@ end
 				return plugin.jobLogEventScan(lul_device, lul_settings, lul_job)
 			</job>
 			<incoming>
-				return handleReadByteResult(lul_job, lul_device, plugin.readByte(lul_data))
+				return plugin.handleReadByteResult(lul_job, lul_device, plugin.readByte(lul_data))
 			</incoming>
 		</action>
 		<action>
@@ -96,7 +96,7 @@ end
 				return plugin.jobUserSetPIN(lul_device, lul_settings, lul_job)
 			</job>
 			<incoming>
-				return handleReadByteResult(lul_job, lul_device, plugin.readByte(lul_data))
+				return plugin.handleReadByteResult(lul_job, lul_device, plugin.readByte(lul_data))
 			</incoming>
 		</action>
 		<action>
@@ -106,7 +106,7 @@ end
 				return plugin.jobSetArmed(lul_device, lul_settings, lul_job)
 			</job>
 			<incoming>
-				return handleReadByteResult(lul_job, lul_device, plugin.readByte(lul_data))
+				return plugin.handleReadByteResult(lul_job, lul_device, plugin.readByte(lul_data))
 			</incoming>
 		</action>
 		<action>
@@ -116,7 +116,7 @@ end
 				return plugin.jobRequestQuickArmMode(lul_device, lul_settings, lul_job)
 			</job>
 			<incoming>
-				return handleReadByteResult(lul_job, lul_device, plugin.readByte(lul_data))
+				return plugin.handleReadByteResult(lul_job, lul_device, plugin.readByte(lul_data))
 			</incoming>
 		</action>
 		<action>
@@ -126,7 +126,7 @@ end
 				return plugin.jobRequestArmMode(lul_device, lul_settings, lul_job)
 			</job>
 			<incoming>
-				return handleReadByteResult(lul_job, lul_device, plugin.readByte(lul_data))
+				return plugin.handleReadByteResult(lul_job, lul_device, plugin.readByte(lul_data))
 			</incoming>
 		</action>
 		<action>
@@ -136,7 +136,7 @@ end
 				return plugin.jobRequestPanicMode(lul_device, lul_settings, lul_job)
 			</job>
 			<incoming>
-				return handleReadByteResult(lul_job, lul_device, plugin.readByte(lul_data))
+				return plugin.handleReadByteResult(lul_job, lul_device, plugin.readByte(lul_data))
 			</incoming>
 		</action>
 	</actionList>
