@@ -701,7 +701,7 @@ end
 -- Update the state of all child partition devices that are configured.
 function processZonesSnapshotMessage(message)
 	-- First byte is the set of 16 zones in this snapshot.
-	local z16 = string.byte(string.sub(message,2)) * 16
+	local z16 = string.byte(string.sub(message,1)) * 16
 	for zone2 = 1,8 do
 		-- Two zones per byte.
 		if (ZONE_VALID[z16+zone2*2-1]) then
