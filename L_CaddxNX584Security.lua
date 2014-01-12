@@ -89,7 +89,7 @@ LOG_MESSAGE_PANEL = {
 	[54] = "Start of listen in",
 	[55] = "Technician on site",
 	[56] = "Technician left",
-	[56] = "Control power up",
+	[57] = "Control power up",
 	[123] = "Begin walk-test",
 	[124] = "End walk-test",
 	[125] = "Re-exit (Partition %d)",
@@ -554,8 +554,8 @@ function getSystemStatus(deviceId)
 					end
 				end
 
-				-- Byte 6 contains 4- or 6-digit PINs
-				if (bitMask(string.byte(string.sub(message,6)), 1)) then
+				-- Byte 5 contains 4- or 6-digit PINs
+				if (bitMask(string.byte(string.sub(message,5)), 1)) then
 					CONFIGURATION_PIN_LENGTH = 6
 				else
 					CONFIGURATION_PIN_LENGTH = 4
