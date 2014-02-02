@@ -33,7 +33,7 @@ function configurationTab(device)
 	var debugEnabled = (get_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "Debug", 0) == "1");
 	alwaysConfigure += '<tr title="Verbose debugging messages to Luup Log">';
 	alwaysConfigure += '<td>Debug to Luup log</td>';
-	alwaysConfigure += '<td><input type="checkbox" onclick="set_device_state(' + device + ', \'urn:futzle-com:serviceId:CaddxNX584Security1\', \'Debug\', $F(this) ? \'1\' : \'\', 0); $(\'caddx_saveChanges\').show()" ';
+	alwaysConfigure += '<td><input type="checkbox" onclick="set_device_state(' + device + ', \'urn:futzle-com:serviceId:CaddxNX584Security1\', \'Debug\', jQuery(this).is(\':checked\') ? \'1\' : \'\', 0); jQuery(\'#caddx_saveChanges\').show()" ';
 	if (debugEnabled) alwaysConfigure += 'checked="checked"';
 	alwaysConfigure += '></input></td>';
 	alwaysConfigure += '</tr>';
@@ -52,7 +52,7 @@ function configurationTab(device)
 			var configuration = response.responseText.evalJSON();
 			if (configuration == undefined)
 			{
-				$('caddx_configuration').innerHTML = '<table width="100%"><tbody>' + alwaysConfigure + '</table>';
+				jQuery('#caddx_configuration').html('<table width="100%"><tbody>' + alwaysConfigure + '</table>');
 			}
 			else
 			{
@@ -109,7 +109,7 @@ function configurationTab(device)
 					var masterUserProtect = (get_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "MasterUserProtect", 0) != "0");
 					table += '<tr title="Prevent changing Master users\' PINs or authorizations">';
 					table += '<td>Protect Master users</td>';
-					table += '<td><input type="checkbox" onclick="set_device_state(' + device + ', \'urn:futzle-com:serviceId:CaddxNX584Security1\', \'MasterUserProtect\', $F(this) ? \'\' : \'0\', 0); $(\'caddx_saveChanges\').show()" ';
+					table += '<td><input type="checkbox" onclick="set_device_state(' + device + ', \'urn:futzle-com:serviceId:CaddxNX584Security1\', \'MasterUserProtect\', jQuery(this).is(\':checked\') ? \'\' : \'0\', 0); jQuery(\'#caddx_saveChanges\').show()" ';
 					if (masterUserProtect) table += 'checked="checked"';
 					table += '></input></td>';
 					table += '</tr>';
@@ -133,7 +133,7 @@ function configurationTab(device)
 					var panicEnabled = (get_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "EnablePanic", 0) == "1");
 					table += '<tr title="Allow Police, Medical and Fire panic">';
 					table += '<td>Panic (Police, Medical, Fire)</td>';
-					table += '<td><input type="checkbox" onclick="set_device_state(' + device + ', \'urn:futzle-com:serviceId:CaddxNX584Security1\', \'EnablePanic\', $F(this) ? \'1\' : \'\', 0); $(\'caddx_saveChanges\').show()" ';
+					table += '<td><input type="checkbox" onclick="set_device_state(' + device + ', \'urn:futzle-com:serviceId:CaddxNX584Security1\', \'EnablePanic\', jQuery(this).is(\':checked\') ? \'1\' : \'\', 0); jQuery(\'#caddx_saveChanges\').show()" ';
 					if (panicEnabled) table += 'checked="checked"';
 					table += '></input></td>';
 					table += '</tr>';
@@ -149,11 +149,11 @@ function configurationTab(device)
 
 				table += '<p>* These settings must be changed through the panel interface.</p>';
 
-				$('caddx_configuration').innerHTML = table;
+				jQuery('#caddx_configuration').html(table);
 			}
 		}, 
 		onFailure: function () {
-			$('caddx_configuration').innerHTML = '<table width="100%"><tbody>' + alwaysConfigure + '</table>';
+			jQuery('#caddx_configuration').html('<table width="100%"><tbody>' + alwaysConfigure + '</table>');
 		}
 	});
 }
@@ -236,7 +236,7 @@ function zoneTab(device)
 	html += '<div style="margin: 5px; padding: 5px; border: 1px grey solid;">';
 	html += '<p style="font-weight: bold; text-align: center;">Scan zones</p>';
 	html += 'Maximum zone: <input type="text" id="caddx_maxZone" size="3"></input>';
-	html += ' <input type="button" onclick="scanAllZones($F(\'caddx_maxZone\'), ' + device + ')" value="Scan"></input>';
+	html += ' <input type="button" onclick="scanAllZones(jQuery(\'#caddx_maxZone\').val(), ' + device + ')" value="Scan"></input>';
 	html += '<div id="zoneScanOutput"></div>';
 	html += '</div>';
 
@@ -266,10 +266,10 @@ function zoneTab(device)
 	var stagger = 0;  // Delay requests a bit to prevent overload of serial line.
 	for (z = 1; z <= 128; z++)
 	{
-		infoCell = $("caddx_zoneInfo"+z);
-		if (infoCell)
+		var infoCell = jQuery("#caddx_zoneInfo"+z);
+		if (infoCell.length != 0)
 		{
-			scanExistingZone.delay(0.5 * stagger++, z, infoCell, device);
+			window.setTimeout(scanExistingZone, 500 * stagger++, z, infoCell, device);
 		}
 	}
 }
@@ -293,7 +293,7 @@ function scanExistingZone(z, infoCell, device)
 			}
 			else
 			{
-				waitForScanExistingZoneJob.delay(0.5, z, jobId, infoCell, device);
+				window.setTimeout(waitForScanExistingZoneJob, 500, z, jobId, infoCell, device);
 			}
 		}, 
 		onFailure: function () {
@@ -315,7 +315,7 @@ function waitForScanExistingZoneJob(z, jobId, infoCell, device)
 			if (jobStatus == 1 || jobStatus == 5)
 			{
 				// Repeat.  Hopefully not so many times as to overflow the stack.
-				waitForScanExistingZoneJob.delay(0.5, z, jobId, infoCell, device);
+				window.setTimeout(waitForScanExistingZoneJob, 500, z, jobId, infoCell, device);
 			}
 			else if (jobStatus == 2)
 			{
@@ -352,7 +352,7 @@ function getScanExistingZoneResult(z, infoCell, device)
 				// Success.  Populate.
 				var info = "";
 				if (partitionList != "") info += "Partition " + partitionList;
-				infoCell.innerHTML = info;
+				infoCell.html(info);
 			}
 		}, 
 		onFailure: function () {
@@ -364,23 +364,23 @@ function getScanExistingZoneResult(z, infoCell, device)
 function scanAllZones(maxZone, device)
 {
 	if (maxZone == "") return;
-	var resultDiv = $("zoneScanOutput");
-	while (resultDiv.hasChildNodes()) { resultDiv.removeChild(resultDiv.firstChild); }
-	var resultTable = resultDiv.appendChild(document.createElement("table"));
-	resultTable.setAttribute("width", "100%");
-	var resultThead = resultTable.appendChild(document.createElement("thead"));
-	resultThead.innerHTML = "<th>Zone</th><th>Name</th><th>Info</th><th>Type</th><th>Action</th>";
-	var resultTbody = resultTable.appendChild(document.createElement("tbody"));
+	var resultDiv = jQuery("#zoneScanOutput");
+	resultDiv.empty();
+	var resultTable = jQuery("<table>").appendTo(resultDiv);
+	resultTable.attr("width", "100%");
+	var resultThead = jQuery("<thead>").appendTo(resultTable);
+	resultThead.html("<th>Zone</th><th>Name</th><th>Info</th><th>Type</th><th>Action</th>");
+	var resultTbody = jQuery("<tbody>").appendTo(resultTable);
 
 	var z;
 	var stagger = 0;  // Delay requests a bit to prevent overload of serial line.
 	for (z = 1; z <= maxZone-0; z++)
 	{
 		if (existingZone[z]) continue;
-		var row = resultTbody.insertRow(-1);
-		row.innerHTML = '<td colspan="5">Scanning zone ' + z + '...</td>';
+		var row = jQuery("<tr>").appendTo(resultTbody);
+		row.html('<td colspan="5">Scanning zone ' + z + '...</td>');
 		// Request the zone information.
-		scanZone.delay(0.5 * stagger++, z, row, device);
+		window.setTimeout(scanZone, 500 * stagger++, z, row, device);
 	}
 }
 
@@ -399,26 +399,26 @@ function getScanZoneResult(z, row, device)
 			var partitionList = response.responseText.evalJSON()["partitions"];
 			if (partitionList == undefined)
 			{
-				row.innerHTML = '<td colspan="5">Scanning zone ' + z + ' failed</td>';
+				row.html('<td colspan="5">Scanning zone ' + z + ' failed</td>');
 			}
 			else
 			{
 				// Success.  Populate.
 				var info = "";
 				if (partitionList != "") info += "Partition " + partitionList;
-				while (row.hasChildNodes()) { row.removeChild(row.firstChild); }
-				row.appendChild(document.createElement("td")).innerHTML = z;
-				var name = row.appendChild(document.createElement("td"));
-				name.innerHTML = "Scanning name...";
-				row.appendChild(document.createElement("td")).innerHTML = info;
-				var type = row.appendChild(document.createElement("td"));
-				var action = row.appendChild(document.createElement("td"));
+				row.empty();
+				jQuery("<td>").appendTo(row).html(z);
+				var name = jQuery("<td>").appendTo(row);
+				name.html("Scanning name...");
+				jQuery("<td>").appendTo(row).html(info);
+				var type = jQuery("<td>").appendTo(row);
+				var action = jQuery("<td>").appendTo(row);
 				// Now we want the zone name.  Which is another scan-wait-fetch cycle...
-				scanZoneName.delay(0.5, z, name, type, action, device);
+				window.setTimeout(scanZoneName, 500, z, name, type, action, device);
 			}
 		}, 
 		onFailure: function () {
-			row.innerHTML = '<td colspan="5">Scanning zone ' + z + ' failed</td>';
+			row.html('<td colspan="5">Scanning zone ' + z + ' failed</td>');
 		}
 	});
 }
@@ -441,16 +441,16 @@ function scanZone(z, row, device)
 			var jobId = response.responseText.evalJSON()["u:ZoneScanResponse"]["JobID"];
 			if (jobId == undefined)
 			{
-				row.innerHTML = '<td colspan="5">Scanning zone ' + z + ' failed</td>';
+				row.html('<td colspan="5">Scanning zone ' + z + ' failed</td>');
 			}
 			else
 			{
-				row.innerHTML = '<td colspan="5">Waiting for response (zone ' + z + ')...</td>';
-				waitForScanZoneJob.delay(0.5, z, jobId, row, device);
+				row.html('<td colspan="5">Waiting for response (zone ' + z + ')...</td>');
+				window.setTimeout(waitForScanZoneJob, 500, z, jobId, row, device);
 			}
 		}, 
 		onFailure: function () {
-			row.innerHTML = '<td colspan="5">Scanning zone ' + z + ' failed</td>';
+			row.html('<td colspan="5">Scanning zone ' + z + ' failed</td>');
 		}
 	});
 }
@@ -470,21 +470,21 @@ function waitForScanZoneJob(z, jobId, row, device)
 			if (jobStatus == 1 || jobStatus == 5)
 			{
 				// Repeat.  Hopefully not so many times as to overflow the stack.
-				waitForScanZoneJob.delay(0.5, z, jobId, row, device);
+				window.setTimeout(waitForScanZoneJob, 500, z, jobId, row, device);
 			}
 			else if (jobStatus == 2)
 			{
-				row.innerHTML = '<td colspan="5">Scanning zone ' + z + ' failed</td>';
+				row.html('<td colspan="5">Scanning zone ' + z + ' failed</td>');
 			}
 			else if (jobStatus == 4)
 			{
 				// Success.  Now get the result of the scan.
-				row.innerHTML = '<td colspan="5">Getting properties (zone ' + z + ')...</td>';
+				row.html('<td colspan="5">Getting properties (zone ' + z + ')...</td>');
 				getScanZoneResult(z, row, device);
 			}
 		}, 
 		onFailure: function () {
-			row.innerHTML = '<td colspan="5">Scanning zone ' + z + ' failed</td>';
+			row.html('<td colspan="5">Scanning zone ' + z + ' failed</td>');
 		}
 	});
 }
@@ -505,26 +505,26 @@ function getScanZoneResult(z, row, device)
 			var partitionList = response.responseText.evalJSON()["partitions"];
 			if (partitionList == undefined)
 			{
-				row.innerHTML = '<td colspan="5">Scanning zone ' + z + ' failed</td>';
+				row.html('<td colspan="5">Scanning zone ' + z + ' failed</td>');
 			}
 			else
 			{
 				// Success.  Populate.
 				var info = "";
 				if (partitionList != "") info += "Partition " + partitionList;
-				while (row.hasChildNodes()) { row.removeChild(row.firstChild); }
-				row.appendChild(document.createElement("td")).innerHTML = z;
-				var name = row.appendChild(document.createElement("td"));
-				name.innerHTML = "Scanning name...";
-				row.appendChild(document.createElement("td")).innerHTML = info;
-				var type = row.appendChild(document.createElement("td"));
-				var action = row.appendChild(document.createElement("td"));
+				row.empty();
+				jQuery("<td>").appendTo(row).html(z);
+				var name = jQuery("<td>").appendTo(row);
+				name.html("Scanning name...");
+				jQuery("<td>").appendTo(row).html(info);
+				var type = jQuery("<td>").appendTo(row);
+				var action = jQuery("<td>").appendTo(row);
 				// Now we want the zone name.  Which is another scan-wait-fetch cycle...
-				scanZoneName.delay(0.5, z, name, type, action, device);
+				window.setTimeout(scanZoneName, 500, z, name, type, action, device);
 			}
 		}, 
 		onFailure: function () {
-			row.innerHTML = '<td colspan="5">Scanning zone ' + z + ' failed</td>';
+			row.html('<td colspan="5">Scanning zone ' + z + ' failed</td>');
 		}
 	});
 }
@@ -551,8 +551,8 @@ function scanZoneName(z, name, type, action, device)
 			}
 			else
 			{
-				name.innerHTML = 'Waiting for response...';
-				waitForScanZoneNameJob.delay(0.5, z, jobId, name, type, action, device);
+				name.html('Waiting for response...');
+				window.setTimeout(waitForScanZoneNameJob, 500, z, jobId, name, type, action, device);
 			}
 		}, 
 		onFailure: function () {
@@ -576,7 +576,7 @@ function waitForScanZoneNameJob(z, jobId, name, type, action, device)
 			if (jobStatus == 1 || jobStatus == 5)
 			{
 				// No response yet. Repeat.
-				waitForScanZoneNameJob.delay(0.5, z, jobId, name, type, action, device);
+				window.setTimeout(waitForScanZoneNameJob, 500, z, jobId, name, type, action, device);
 			}
 			else if (jobStatus == 2)
 			{
@@ -586,7 +586,7 @@ function waitForScanZoneNameJob(z, jobId, name, type, action, device)
 			else if (jobStatus == 4)
 			{
 				// Success.  Fetch the result.
-				name.innerHTML = 'Getting name...';
+				name.html('Getting name...');
 				getScanZoneNameResult(z, name, type, action, device);
 			}
 		}, 
@@ -635,60 +635,60 @@ function getScanZoneNameResult(z, name, type, action, device)
 function displayZoneScanButtons(z, text, name, type, action, device)
 {
 	if (text == "") text = "Zone " + z;
-	name.innerHTML = '<input id="caddx_zoneName_' + z + '" type="text" size="17"></input>';
-	$("caddx_zoneName_" + z).setValue(text);
+	name.html('<input id="caddx_zoneName_' + z + '" type="text" size="17"></input>');
+	jQuery("#caddx_zoneName_" + z).val(text);
 
-	type.innerHTML = '<select id="caddx_zoneType_' + z + '">' +
+	type.html('<select id="caddx_zoneType_' + z + '">' +
 		'<option value="D_MotionSensor1.xml" selected="selected" >Motion</option>' +
 		'<option value="D_DoorSensor1.xml">Door</option>' +
 		'<option value="D_SmokeSensor1.xml">Smoke</option>' +
 		'<option value="D_TempLeakSensor1.xml">Temp Leak</option>' +
-		'</select>';
+		'</select>');
 
-	action.innerHTML = '<input type="button" onclick="addScannedZone(' + z + ',$(\'caddx_zoneName_' + z + '\'),$(\'caddx_zoneType_' + z + '\'),this,' + device + ')" value="Add"></input>';
+	action.html('<input type="button" onclick="addScannedZone(' + z + ',jQuery(\'#caddx_zoneName_' + z + '\'),jQuery(\'#caddx_zoneType_' + z + '\'),this,' + device + ')" value="Add"></input>');
 }
 
 // Add variables for a newly-scanned zone when the user clicks the "Add" button.
 function addScannedZone(z, text, type, button, device)
 {
 	// Prevent user from adding a second time.
-	text.disable();
-	type.disable();
-	button.disable();
-	set_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "Zone" + z + "Name", $F(text), 0);
-	set_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "Zone" + z + "Type", $F(type), 0);
+	text.get(0).disabled = true;
+	type.get(0).disabled = true;
+	jQuery(button).get(0).disabled = true;
+	set_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "Zone" + z + "Name", jQuery(text).val(), 0);
+	set_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "Zone" + z + "Type", jQuery(type).val(), 0);
 	// Feedback.
-	button.setValue("Added");
-	$('caddx_saveChanges').show();
+	jQuery(button).val("Added");
+	jQuery('#caddx_saveChanges').show();
 }
 
 // Delete variables for an existing zone when the user clicks the "Delete" button.
 function deleteExistingZone(z, button, device)
 {
-	button.disable();
+	jQuery(button).get(0).disabled = true;
 	// Can't actually delete.  Closest is to set to empty string.
 	set_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "Zone" + z + "Name", "", 0);
 	set_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "Zone" + z + "Type", "", 0);
-	button.setValue("Deleted");
-	$('caddx_saveChanges').show();
+	jQuery(button).val("Deleted");
+	jQuery('#caddx_saveChanges').show();
 }
 
 // Add a zone manually.
 function addManualZone(button, device)
 {
-	var z = $F("caddx_zone_manual");
-	var name = $F("caddx_zoneName_manual");
+	var z = jQuery("#caddx_zone_manual").val();
+	var name = jQuery("#caddx_zoneName_manual").val();
 	if (z > 0 && z <= 128 && !existingZone[z] && name != "")
 	{
-		button.disable();
-		$("caddx_zone_manual").disable();
-		$("caddx_zoneName_manual").disable();
+		jQuery(button).get(0).disabled = true;
+		jQuery("#caddx_zone_manual").get(0).disabled = true;
+		jQuery("#caddx_zoneName_manual").get(0).disabled = true;
 		set_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "Zone" + z + "Name", name, 0);
-		set_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "Zone" + z + "Type", $F("caddx_zoneType_manual"), 0);
-		$("caddx_zoneType_manual").disable();
+		set_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "Zone" + z + "Type", jQuery("#caddx_zoneType_manual").val(), 0);
+		jQuery("#caddx_zoneType_manual").get(0).disabled = true;
 		// Feedback.
-		button.setValue("Added");
-		$('caddx_saveChanges').show();
+		jQuery(button).val("Added");
+		jQuery('#caddx_saveChanges').show();
 	}
 
 }
@@ -724,12 +724,12 @@ function usersTab(device)
 			var configuration = response.responseText.evalJSON();
 			if (configuration == undefined)
 			{
-				usersTabWithConfiguration($('caddx_users'), false, false, false, undefined, device);
+				usersTabWithConfiguration(jQuery('#caddx_users'), false, false, false, undefined, device);
 			}
 			else
 			{
 				// Success.  Populate.
-				usersTabWithConfiguration($('caddx_users'),
+				usersTabWithConfiguration(jQuery('#caddx_users'),
 					configuration["capability"]["getUserInformationWithPin"] == "true",
 					configuration["capability"]["setUserCodeWithPin"] == "true",
 					configuration["capability"]["setUserAuthorizationWithPin"] == "true",
@@ -739,7 +739,7 @@ function usersTab(device)
 			}
 		}, 
 		onFailure: function () {
-			usersTabWithConfiguration($('caddx_users'), false, false, false, undefined, device);
+			usersTabWithConfiguration(jQuery('#caddx_users'), false, false, false, undefined, device);
 		}
 	});
 
@@ -807,7 +807,7 @@ function usersTabWithConfiguration(div, getUserInformationEnabled, setUserCodeEn
 		table += '<p>';
 		table += 'Master PIN: <input id="caddx_newUsersMasterPin" type="text" size="' + pinLength + '"></input>';
 		table += ' Maximum user: <input type="text" id="caddx_maxUser" size="3"></input>';
-		table += ' <input type="button" onclick="scanNewUsers($F(\'caddx_maxUser\'),' + pinLength + ',' + device + ')" value="Scan"></input></p>';
+		table += ' <input type="button" onclick="scanNewUsers(jQuery(\'#caddx_maxUser\').val(),' + pinLength + ',' + device + ')" value="Scan"></input></p>';
 		table += '<div id="userScanOutput"></div>';
 		table += '</div>';
 	}
@@ -827,67 +827,63 @@ function usersTabWithConfiguration(div, getUserInformationEnabled, setUserCodeEn
 	table += '</table>';
 	table += '</div>';
 
-	div.innerHTML = table;
+	div.html(table);
 }
 
 function scanAllExistingUsers(setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device)
 {
-	var masterPin = $F('caddx_existingUsersMasterPin');
+	var masterPin = jQuery('#caddx_existingUsersMasterPin').val();
 	if (masterPin.length != pinLength) return;
 
 	var stagger = 0;  // Delay requests a bit to prevent overload of serial line.
-	var userTable = $('caddx_usertable');
-	var userList = userTable.select('.caddx_usernum');
+	var userList = jQuery('#caddx_usertable .caddx_user');
 	var userObjectIterator;
 	for(userObjectIterator = 0; userObjectIterator < userList.length; userObjectIterator++)
 	{
-		var u = userList[userObjectIterator].firstChild.data;
-		var pinCell = userList[userObjectIterator].parentNode.select('.caddx_userpin');
-		var authorizationCell = userList[userObjectIterator].parentNode.select('.caddx_userauthorization');
-		var actionCell = userList[userObjectIterator].parentNode.select('.caddx_useraction');
+		var u = jQuery(userList[userObjectIterator]).children('.caddx_usernum').text();
+		var pinCell = jQuery(userList[userObjectIterator]).children('.caddx_userpin');
+		var authorizationCell = jQuery(userList[userObjectIterator]).children('.caddx_userauthorization');
+		var actionCell = jQuery(userList[userObjectIterator]).children('.caddx_useraction');
 		if (u < 98)
-			scanUser.delay(0.5 * stagger++, u, masterPin, pinCell, authorizationCell, actionCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device);
+			window.setTimeout(scanUser, 500 * stagger++, u, masterPin, pinCell, authorizationCell, actionCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device);
 	}
 }
 
 function scanNewUsers(maxUser, pinLength, device)
 {
 	if (maxUser == "") return;
-	var masterPin = $F('caddx_newUsersMasterPin');
+	var masterPin = jQuery('#caddx_newUsersMasterPin').val();
 	if (masterPin.length != pinLength) return;
 
-	var resultDiv = $("userScanOutput");
-	while (resultDiv.hasChildNodes()) { resultDiv.removeChild(resultDiv.firstChild); }
-	var resultTable = resultDiv.appendChild(document.createElement("table"));
-	resultTable.setAttribute("width", "100%");
-	var resultThead = resultTable.appendChild(document.createElement("thead"));
-	resultThead.innerHTML = "<th>User</th><th>Name</th><th>PIN</th><th>Authorization</th><th>Action</th>";
-	var resultTbody = resultTable.appendChild(document.createElement("tbody"));
+	var resultDiv = jQuery("#userScanOutput");
+	resultDiv.empty();
+	var resultTable = jQuery("<table>").appendTo(resultDiv);
+	resultTable.attr("width", "100%");
+	var resultThead = jQuery("<thead>").appendTo(resultTable);
+	resultThead.html("<th>User</th><th>Name</th><th>PIN</th><th>Authorization</th><th>Action</th>");
+	var resultTbody = jQuery("<tbody>").appendTo(resultTable);
 
 	var u;
 	var stagger = 0;  // Delay requests a bit to prevent overload of serial line.
 	for (u = 1; u <= maxUser-0; u++)
 	{
 		if (existingUser[u]) continue;
-		var row = resultTbody.insertRow(-1);
+		var row = jQuery("<tr>").appendTo(resultTbody);
 		var html = '';
 		html += '<td>' + u + '</td>';
 		html += '<td><input type="text" class="caddx_username" size="17" value="User ' + u + '"></td>';
 		html += '<td class="caddx_userpin">Scanning...</td>';
 		html += '<td class="caddx_userauthorization">Scanning...</td>';
 		html += '<td><input type="button" Value="Add" onclick="addScannedUser(' + u + ',this,' + device + ')"></input></td>';
-		row.innerHTML = html;
+		row.html(html);
 		// Request the user information.
 		if (u < 98)
-			scanUser.delay(0.5 * stagger++, u, masterPin, row.select(".caddx_userpin"), row.select(".caddx_userauthorization"), new Array(), false, false, pinLength, device);
+			window.setTimeout(scanUser, 500 * stagger++, u, masterPin, row.children(".caddx_userpin"), row.children(".caddx_userauthorization"), new Array(), false, false, pinLength, device);
 	}
 }
 
 function scanUser(u, masterPin, pinCell, authorizationCell, actionCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device)
 {
-	// if (pinCell.length > 0) pinCell[0].innerHTML = "Fetching...";
-	// if (authorizationCell.length > 0) authorizationCell[0].innerHTML = "Fetching..."
-
 	new Ajax.Request("../port_3480/data_request", {
 		method: "get",
 		parameters: {
@@ -903,19 +899,19 @@ function scanUser(u, masterPin, pinCell, authorizationCell, actionCell, setUserC
 			var jobId = response.responseText.evalJSON()["u:UserScanResponse"]["JobID"];
 			if (jobId == undefined)
 			{
-				if (pinCell.length > 0) pinCell[0].innerHTML = "Failed";
-				if (authorizationCell.length > 0) authorizationCell[0].innerHTML = "Failed"
+				if (pinCell.length > 0) pinCell.html("Failed");
+				if (authorizationCell.length > 0) authorizationCell.html("Failed");
 			}
 			else
 			{
-				if (pinCell.length > 0) pinCell[0].innerHTML = "Waiting...";
-				if (authorizationCell.length > 0) authorizationCell[0].innerHTML = "Waiting..."
-				waitForScanUserJob.delay(0.5, u, jobId, pinCell, authorizationCell, actionCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device);
+				if (pinCell.length > 0) pinCell.html("Waiting...");
+				if (authorizationCell.length > 0) authorizationCell.html("Waiting...");
+				window.setTimeout(waitForScanUserJob, 500, u, jobId, pinCell, authorizationCell, actionCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device);
 			}
 		}, 
 		onFailure: function () {
-			if (pinCell.length > 0) pinCell[0].innerHTML = "Failed";
-			if (authorizationCell.length > 0) authorizationCell[0].innerHTML = "Failed"
+			if (pinCell.length > 0) pinCell.html("Failed");
+			if (authorizationCell.length > 0) authorizationCell.html("Failed");
 		}
 	});
 }
@@ -934,23 +930,23 @@ function waitForScanUserJob(u, jobId, pinCell, authorizationCell, actionCell, se
 			if (jobStatus == 1 || jobStatus == 5)
 			{
 				// Repeat.  Hopefully not so many times as to overflow the stack.
-				waitForScanUserJob.delay(0.5, u, jobId, pinCell, authorizationCell, actionCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device);
+				window.setTimeout(waitForScanUserJob, 500, u, jobId, pinCell, authorizationCell, actionCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device);
 			}
 			else if (jobStatus == 2)
 			{
-				if (pinCell.length > 0) pinCell[0].innerHTML = "Failed";
-				if (authorizationCell.length > 0) authorizationCell[0].innerHTML = "Failed"
+				if (pinCell.length > 0) pinCell.html("Failed");
+				if (authorizationCell.length > 0) authorizationCell.html("Failed");
 			}
 			else if (jobStatus == 4)
 			{
-				if (pinCell.length > 0) pinCell[0].innerHTML = "Getting result";
-				if (authorizationCell.length > 0) authorizationCell[0].innerHTML = "Getting result"
+				if (pinCell.length > 0) pinCell.html("Getting result");
+				if (authorizationCell.length > 0) authorizationCell.html("Getting result");
 				getScanUserResult(u, pinCell, authorizationCell, actionCell, setUserCodeEnabled, setUserAuthorizationEnabled, pinLength, device);
 			}
 		}, 
 		onFailure: function () {
-			if (pinCell.length > 0) pinCell[0].innerHTML = "Failed";
-			if (authorizationCell.length > 0) authorizationCell[0].innerHTML = "Failed"
+			if (pinCell.length > 0) pinCell.html("Failed");
+			if (authorizationCell.length > 0) authorizationCell.html("Failed");
 		}
 	});
 }
@@ -969,8 +965,8 @@ function getScanUserResult(u, pinCell, authorizationCell, actionCell, setUserCod
 			var userInfo = response.responseText.evalJSON();
 			if (userInfo == undefined)
 			{
-				if (pinCell.length > 0) pinCell[0].innerHTML = "Failed";
-				if (authorizationCell.length > 0) authorizationCell[0].innerHTML = "Failed"
+				if (pinCell.length > 0) pinCell.html("Failed");
+				if (authorizationCell.length > 0) authorizationCell.html("Failed");
 			}
 			else
 			{
@@ -980,23 +976,23 @@ function getScanUserResult(u, pinCell, authorizationCell, actionCell, setUserCod
 					var masterUserProtect = (get_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "MasterUserProtect", 0) != "0");
 					if ((!masterUserProtect || !(userInfo.authorization.master)) && setUserCodeEnabled)
 					{
-						pinCell[0].innerHTML = '<input type="text" size="' + pinLength + '" value="' + userInfo.pin.escapeHTML()+ '"></input>';
-						if (actionCell[0].select('.caddx_useraction_setpin').length == 0)
+						pinCell.html('<input type="text" size="' + pinLength + '" value="' + userInfo.pin.escapeHTML()+ '"></input>');
+						if (actionCell.select('.caddx_useraction_setpin').length == 0)
 						{
 							// Add "Set PIN" button.
-							var setPinButton = document.createElement('input');
-							setPinButton.setAttribute('type', 'button');
-							setPinButton.setAttribute('value', 'Set PIN');
-							setPinButton.setAttribute('class', 'caddx_useraction_setpin');
-							setPinButton.setAttribute('onclick', 'setUserPin(' + u + ',this,' + pinLength + ',' + device + ')');
-							actionCell[0].appendChild(document.createTextNode(' '));
-							actionCell[0].appendChild(setPinButton);
+							var setPinButton = jQuery('<input>');
+							setPinButton.attr('type', 'button');
+							setPinButton.attr('value', 'Set PIN');
+							setPinButton.attr('class', 'caddx_useraction_setpin');
+							setPinButton.attr('onclick', 'setUserPin(' + u + ',this,' + pinLength + ',' + device + ')');
+							actionCell.append(document.createTextNode(' '));
+							actionCell.append(setPinButton);
 						}
 					}
 					else
 					{
 						// Not allowed to edit the PIN.
-						pinCell[0].innerHTML = userInfo.pin;
+						pinCell.html(userInfo.pin);
 					}
 				}
 				if (authorizationCell.length > 0)
@@ -1047,14 +1043,14 @@ function getScanUserResult(u, pinCell, authorizationCell, actionCell, setUserCod
 							html += '<div>Partition ' + userInfo.partitions + '</div>';
 						}
 						html += '';
-						authorizationCell[0].innerHTML = html;
+						authorizationCell.html(html);
 					}
 				}
 			}
 		}, 
 		onFailure: function () {
-			if (pinCell.length > 0) pinCell[0].innerHTML = "Failed";
-			if (authorizationCell.length > 0) authorizationCell[0].innerHTML = "Failed"
+			if (pinCell.length > 0) pinCell.html("Failed");
+			if (authorizationCell.length > 0) authorizationCell.html("Failed");
 		}
 	});
 }
@@ -1063,16 +1059,16 @@ function setUserPin(u, button, pinLength, device)
 {
 	var pinCell = button.parentNode.parentNode.select('.caddx_userpin');
 
-	var masterPin = $F('caddx_existingUsersMasterPin');
+	var masterPin = jQuery('#caddx_existingUsersMasterPin');
     if (masterPin.length != pinLength) return;
 
-	var userPin = pinCell[0].select('input')[0].getValue();
+	var userPin = pinCell.select('input').val();
     if (userPin == "----" && 4 == pinLength) userPin = "";
     if (userPin == "------" && 6 == pinLength) userPin = "";
     if (userPin != "" && userPin.length != pinLength) return;
 
-	button.disable();
-	button.setValue("Setting");
+	jQuery(button).get(0).disabled = true;
+	jQuery(button).val("Setting");
 	new Ajax.Request("../port_3480/data_request", {
 		method: "get",
 		parameters: {
@@ -1089,17 +1085,17 @@ function setUserPin(u, button, pinLength, device)
 			var jobId = response.responseText.evalJSON()["u:UserSetPINResponse"]["JobID"];
 			if (jobId == undefined)
 			{
-				button.setValue("Failed");
-				button.enable();
+				jQuery(button).val("Failed");
+				jQuery(button).get(0).disabled = false;
 			}
 			else
 			{
-				waitForSetUserPINJob.delay(0.5, jobId, button, device);
+				window.setTimeout(waitForSetUserPINJob, 500, jobId, button, device);
 			}
 		}, 
 		onFailure: function () {
-			button.setValue("Failed");
-			button.enable();
+			jQuery(button).val("Failed");
+			jQuery(button).get(0).disabled = false;
 		}
 	});
 }
@@ -1118,22 +1114,22 @@ function waitForSetUserPINJob(jobId, button, device)
 			if (jobStatus == 1 || jobStatus == 5)
 			{
 				// Repeat.  Hopefully not so many times as to overflow the stack.
-				waitForSetUserPINJob.delay(0.5, jobId, button, device);
+				window.setTimout(waitForSetUserPINJob, 500, jobId, button, device);
 			}
 			else if (jobStatus == 2)
 			{
-				button.setValue("Failed");
-				button.enable();
+				jQuery(button).val("Failed");
+				jQuery(button).get(0).disabled = false;
 			}
 			else if (jobStatus == 4)
 			{
-				button.setValue("Success");
-				button.enable();
+				jQuery(button).val("Success");
+				jQuery(button).get(0).disabled = false;
 			}
 		}, 
 		onFailure: function () {
-			button.setValue("Failed");
-			button.enable();
+			jQuery(button).val("Failed");
+			jQuery(button).get(0).disabled = false;
 		}
 	});
 }
@@ -1141,8 +1137,8 @@ function waitForSetUserPINJob(jobId, button, device)
 // Rename an existing user
 function nameUser(u, text, device)
 {
-	set_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "User" + u, $F(text), 0);
-	$('caddx_saveChanges').show();
+	set_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "User" + u, jQuery(text).val(), 0);
+	jQuery('#caddx_saveChanges').show();
 }
 
 // Delete variables for an existing user when the user clicks the "Hide" button.
@@ -1152,35 +1148,35 @@ function hideExistingUser(u, button, device)
 	button.parentNode.parentNode.select('input').invoke('disable');
 	// Can't actually delete.  Closest is to set to empty string.
 	set_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "User" + u, "", 0);
-	button.setValue("Hidden");
-	$('caddx_saveChanges').show();
+	jQuery(button).val("Hidden");
+	jQuery('#caddx_saveChanges').show();
 }
 
 // Add a user from a scan.
 function addScannedUser(u, button, device)
 {
-	var nameInput = button.parentNode.parentNode.select('.caddx_username')[0];
-	button.disable();
-	nameInput.disable();
-	set_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "User" + u, $F(nameInput), 0);
-	button.setValue("Added");
-	$('caddx_saveChanges').show();
+	var nameInput = button.parentNode.parentNode.select('.caddx_username');
+	jQuery(button).get(0).disabled = true;
+	jQuery(nameInput).get(0).disabled = true;
+	set_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "User" + u, jQuery(nameInput).val(), 0);
+	jQuery(button).val("Added");
+	jQuery('#caddx_saveChanges').show();
 }
 
 // Add a user manually.
 function addManualUser(button, device)
 {
-	var u = $F("caddx_user_manual");
-	var name = $F("caddx_userName_manual");
+	var u = jQuery("#caddx_user_manual").val();
+	var name = jQuery("#caddx_userName_manual").val();
 	if (u > 0 && u < 100 && !existingUser[u] && name != "")
 	{
-		button.disable();
-		$("caddx_user_manual").disable();
-		$("caddx_userName_manual").disable();
+		jQuery(button).get(0).disabled = true;
+		jQuery("#caddx_user_manual").get(0).disabled = true;
+		jQuery("#caddx_userName_manual").get(0).disabled = true;
 		set_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "User" + u, name, 0);
 		// Feedback.
-		button.setValue("Added");
-		$('caddx_saveChanges').show();
+		jQuery(button).val("Added");
+		jQuery('#caddx_saveChanges').show();
 	}
 
 }
@@ -1195,7 +1191,7 @@ function eventLogTab(device)
 {
 	var topOfStack = get_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "StackPointer", 1) - 0;
 	var html = '';
-	html += '<p>Log entries <input type="hidden" id="caddx_getMoreLogStart" value="' + topOfStack + '"></input><input id="caddx_getMoreLogCount" type="text" value="10" size="3"></input> <input id="caddx_getMoreLogButton" type="button" value="Get more" disabled="disabled" onclick="scanLogEvent($F(\'caddx_getMoreLogStart\'), $F(\'caddx_getMoreLogCount\'), $(\'caddx_logEventTable\'), ' + device + ')"></input></p>';
+	html += '<p>Log entries <input type="hidden" id="caddx_getMoreLogStart" value="' + topOfStack + '"></input><input id="caddx_getMoreLogCount" type="text" value="10" size="3"></input> <input id="caddx_getMoreLogButton" type="button" value="Get more" disabled="disabled" onclick="scanLogEvent(jQuery(\'#caddx_getMoreLogStart\').val(), jQuery(\'#caddx_getMoreLogCount\').val(), jQuery(\'#caddx_logEventTable\'), ' + device + ')"></input></p>';
 	html += '<table width="100%">';
 	html += '<th>Date</th><th>Time</th><th>Event</th>';
 	html += '<tbody id="caddx_logEventTable"></tbody>'
@@ -1203,14 +1199,14 @@ function eventLogTab(device)
 
 	set_panel_html(html);
 
-	scanLogEvent(topOfStack, $F('caddx_getMoreLogCount'), $('caddx_logEventTable'), device)
+	scanLogEvent(topOfStack, jQuery('#caddx_getMoreLogCount').val(), jQuery('#caddx_logEventTable'), device)
 }
 
 function scanLogEvent(sp, count, table, device)
 {
-	$('caddx_getMoreLogButton').disable();
-	var row = table.insertRow(-1);
-	row.innerHTML = '<td colspan="3">Getting event...</td>';
+	jQuery('#caddx_getMoreLogButton').get(0).disabled = true;
+	var row = jQuery("<tr>").appendTo(table);
+	row.html('<td colspan="3">Getting event...</td>');
 	new Ajax.Request("../port_3480/data_request", {
 		method: "get",
 		parameters: {
@@ -1225,24 +1221,24 @@ function scanLogEvent(sp, count, table, device)
 			var jobId = response.responseText.evalJSON()["u:LogEventScanResponse"]["JobID"];
 			if (jobId == undefined)
 			{
-				row.innerHTML = '<td colspan="3">Failed to get event</td>';
-				$('caddx_getMoreLogButton').enable();
+				row.html('<td colspan="3">Failed to get event</td>');
+				jQuery('#caddx_getMoreLogButton').get(0).disabled = false;
 			}
 			else
 			{
-				waitForScanLogEventJob.delay(0.5, sp, jobId, count, table, row, device);
+				window.setTimeout(waitForScanLogEventJob, 500, sp, jobId, count, table, row, device);
 			}
 		}, 
 		onFailure: function () {
-			row.innerHTML = '<td colspan="3">Failed to get event</td>';
-			$('caddx_getMoreLogButton').enable();
+			row.html('<td colspan="3">Failed to get event</td>');
+			jQuery('#caddx_getMoreLogButton').get(0).disabled = false;
 		}
 	});
 }
 
 function waitForScanLogEventJob(sp, jobId, count, table, row, device)
 {
-	row.innerHTML = '<td colspan="3">Waiting for response...</td>';
+	row.html('<td colspan="3">Waiting for response...</td>');
 	new Ajax.Request("../port_3480/data_request", {
 		method: "get",
 		parameters: {
@@ -1255,12 +1251,12 @@ function waitForScanLogEventJob(sp, jobId, count, table, row, device)
 			if (jobStatus == 1 || jobStatus == 5)
 			{
 				// Repeat.  Hopefully not so many times as to overflow the stack.
-				waitForScanLogEventJob.delay(0.5, sp, jobId, count, table, row, device);
+				window,setTimeout(waitForScanLogEventJob, 500, sp, jobId, count, table, row, device);
 			}
 			else if (jobStatus == 2)
 			{
-				row.innerHTML = '<td colspan="3">Failed to get event</td>';
-				$('caddx_getMoreLogButton').enable();
+				row.html('<td colspan="3">Failed to get event</td>');
+				jQuery('#caddx_getMoreLogButton').get(0).disabled = false;
 			}
 			else if (jobStatus == 4)
 			{
@@ -1269,15 +1265,15 @@ function waitForScanLogEventJob(sp, jobId, count, table, row, device)
 			}
 		}, 
 		onFailure: function () {
-			row.innerHTML = '<td colspan="3">Failed to get event</td>';
-			$('caddx_getMoreLogButton').enable();
+			row.html('<td colspan="3">Failed to get event</td>');
+			jQuery('#caddx_getMoreLogButton').get(0).disabled = false;
 		}
 	});
 }
 
 function getScanLogEventResult(sp, count, table, row, device)
 {
-	row.innerHTML = '<td colspan="3">Getting response...</td>';
+	row.html('<td colspan="3">Getting response...</td>');
 	new Ajax.Request("../port_3480/data_request", {
 		method: "get",
 		parameters: {
@@ -1310,12 +1306,12 @@ function getScanLogEventResult(sp, count, table, row, device)
 			html += log.messageText.escapeHTML();
 			html += '</td>';
 
-			row.innerHTML = html;
+			row.html(html);
 
 			// Next row of log.
 			// Stack rolls around: 0 to max log size - 1.
 			if (--sp < 0) sp = log.logSize - 1;
-			$('caddx_getMoreLogStart').setValue(sp);
+			jQuery('#caddx_getMoreLogStart').val(sp);
 			if (count > 1)
 			{
 				// Do another row.
@@ -1324,12 +1320,12 @@ function getScanLogEventResult(sp, count, table, row, device)
 			else
 			{
 				// Enable "get more" button.
-				$('caddx_getMoreLogButton').enable();
+				jQuery('#caddx_getMoreLogButton').get(0).disabled = false;
 			}
 		}, 
 		onFailure: function () {
-			row.innerHTML = '<td colspan="3">Failed to get event</td>';
-			$('caddx_getMoreLogButton').enable();
+			row.html('<td colspan="3">Failed to get event</td>');
+			jQuery('#caddx_getMoreLogButton').get(0).disabled = false;
 		}
 	});
 }

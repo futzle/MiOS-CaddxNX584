@@ -111,37 +111,37 @@ function getTcpPort(deviceId)
 /* Mess with the DOM to disable parts of the UI. */
 function enableSelectedOption(deviceId, currentConnectionType, ownedSerialDeviceId)
 {
-  $('serialDevice').disable();
-  $('serialSpeed').disable();
-  $('serialData').disable();
-  $('serialParity').disable();
-  $('serialStop').disable();
-  $('ipaddress').disable();
-  $('tcpport').disable();
+  jQuery('#serialDevice').get(0).disabled = true;
+  jQuery('#serialSpeed').get(0).disabled = true;
+  jQuery('#serialData').get(0).disabled = true;
+  jQuery('#serialParity').get(0).disabled = true;
+  jQuery('#serialStop').get(0).disabled = true;
+  jQuery('#ipaddress').get(0).disabled = true;
+  jQuery('#tcpport').get(0).disabled = true;
 
   if (currentConnectionType == "ioDevice")
   {
-    $('serialDevice').enable();
+    jQuery('#serialDevice').get(0).disabled = false;
     if (ownedSerialDeviceId != undefined && ownedSerialDeviceId != "")
     {
       var serialSpeed = jsonp.get_lu_device_variable_value(ownedSerialDeviceId, "urn:micasaverde-org:serviceId:SerialPort1", "baud", 0);
       if (serialSpeed == undefined || serialSpeed == "") serialSpeed = "9600";  // Default
-      $('serialSpeed').setValue(serialSpeed).enable();
+      jQuery('#serialSpeed').val(serialSpeed).get(0).disabled = false;
       var serialData = jsonp.get_lu_device_variable_value(ownedSerialDeviceId, "urn:micasaverde-org:serviceId:SerialPort1", "databits", 0);
       if (serialData == undefined || serialData == "") serialData = "8";  // Default
-      $('serialData').setValue(serialData).enable();
+      jQuery('#serialData').val(serialData).get(0).disabled = false;
       var serialParity = jsonp.get_lu_device_variable_value(ownedSerialDeviceId, "urn:micasaverde-org:serviceId:SerialPort1", "parity", 0);
       if (serialParity == undefined || serialParity == "") serialParity = "none";  // Default
-      $('serialParity').setValue(serialParity).enable();
+      jQuery('#serialParity').val(serialParity).get(0).disabled = false;
       var serialStop = jsonp.get_lu_device_variable_value(ownedSerialDeviceId, "urn:micasaverde-org:serviceId:SerialPort1", "stopbits", 0);
       if (serialStop == undefined || serialStop == "") serialStop = "1";  // Default
-      $('serialStop').setValue(serialStop).enable();
+      jQuery('#serialStop').val(serialStop).get(0).disabled = false;
     }
   }
   if (currentConnectionType == "ip")
   {
-    $('ipaddress').enable();
-    $('tcpport').enable();
+    jQuery('#ipaddress').get(0).disabled = false;
+    jQuery('#tcpport').get(0).disabled = false;
   }
 }
 
@@ -158,10 +158,10 @@ function setSerialDevice(deviceId, serialDeviceId)
 /* Set the IODevice serial properties (speed, parity, etc.). */
 function setSerialProperties(deviceId, serialDeviceId)
 {
-  set_device_state(serialDeviceId, "urn:micasaverde-org:serviceId:SerialPort1", "baud", $F('serialSpeed'), 0);
-  set_device_state(serialDeviceId, "urn:micasaverde-org:serviceId:SerialPort1", "databits", $F('serialData'), 0);
-  set_device_state(serialDeviceId, "urn:micasaverde-org:serviceId:SerialPort1", "parity", $F('serialParity'), 0);
-  set_device_state(serialDeviceId, "urn:micasaverde-org:serviceId:SerialPort1", "stopbits", $F('serialStop'), 0);
+  set_device_state(serialDeviceId, "urn:micasaverde-org:serviceId:SerialPort1", "baud", jQuery('#serialSpeed').val(), 0);
+  set_device_state(serialDeviceId, "urn:micasaverde-org:serviceId:SerialPort1", "databits", jQuery('#serialData').val(), 0);
+  set_device_state(serialDeviceId, "urn:micasaverde-org:serviceId:SerialPort1", "parity", jQuery('#serialParity').val(), 0);
+  set_device_state(serialDeviceId, "urn:micasaverde-org:serviceId:SerialPort1", "stopbits", jQuery('#serialStop').val(), 0);
 }
 
 /* Set the ip special variable, when
@@ -169,7 +169,7 @@ function setSerialProperties(deviceId, serialDeviceId)
    or when the two text fields change. */
 function setIPDevice(deviceId, ipAddress, tcpPort)
 {
-  if ($('tcpport').disabled || tcpPort == undefined || tcpPort == "")
+  if (jQuery('#tcpport').get(0).disabled || tcpPort == undefined || tcpPort == "")
   {
     jsonp.get_device_by_id(deviceId).ip = ipAddress;
   }
@@ -227,8 +227,8 @@ function serialConnection(deviceId)
   /* Serial port (including IPSerial) */
   htmlResult += "<p><input type='radio' name='connectionType' value='serial' ";
   if (currentConnectionType == "ioDevice") htmlResult += "checked='checked' ";
-  htmlResult += "onclick='setSerialDevice(" + deviceId + ",$F(serialDevice))'/>Serial port or IPSerial device ";
-  htmlResult += "<select id='serialDevice' onchange='setSerialDevice(" + deviceId + ",$F(serialDevice))'>";
+  htmlResult += "onclick='setSerialDevice(" + deviceId + ",jQuery(\"#serialDevice\").val())'/>Serial port or IPSerial device ";
+  htmlResult += "<select id='serialDevice' onchange='setSerialDevice(" + deviceId + ",jQuery(\"#serialDevice\").val())'>";
   htmlResult += "<option value=''>None</option>";
   var serialDevices = getSerialDevices(deviceId);
   var ownedSerialDeviceId;
@@ -261,22 +261,22 @@ function serialConnection(deviceId)
   htmlResult += "</select>";
   htmlResult += "</p>";
   htmlResult += "<p style='margin-left: 4em;'>";
-  htmlResult += "Speed <select id='serialSpeed' onchange='setSerialProperties(" + deviceId + ",$F(serialDevice))'><option value='300'>300</option><option value='1200'>1200</option><option value='2400'>2400</option><option value='4800'>4800</option><option value='9600'>9600</option><option value='19200'>19200</option><option value='38400'>38400</option><option value='57600'>57600</option><option value='115200'>115200</option><option value='230400'>230400</option></select>";
-  htmlResult += " Data bits <select id='serialData' onchange='setSerialProperties(" + deviceId + ",$F(serialDevice))'><option value='7'>7</option><option value='8'>8</option></select>";
-  htmlResult += " Parity <select id='serialParity' onchange='setSerialProperties(" + deviceId + ",$F(serialDevice))'><option value='none'>None</option><option value='even'>Even</option><option value='odd'>Odd</option></select>";
-  htmlResult += " Stop bits <select id='serialStop' onchange='setSerialProperties(" + deviceId + ",$F(serialDevice))'><option value='0'>0</option><option value='1'>1</option><option value='2'>2</option></select>";
+  htmlResult += "Speed <select id='serialSpeed' onchange='setSerialProperties(" + deviceId + ",jQuery(\"#serialDevice\").val())'><option value='300'>300</option><option value='1200'>1200</option><option value='2400'>2400</option><option value='4800'>4800</option><option value='9600'>9600</option><option value='19200'>19200</option><option value='38400'>38400</option><option value='57600'>57600</option><option value='115200'>115200</option><option value='230400'>230400</option></select>";
+  htmlResult += " Data bits <select id='serialData' onchange='setSerialProperties(" + deviceId + ",jQuery(\"#serialDevice\").val())'><option value='7'>7</option><option value='8'>8</option></select>";
+  htmlResult += " Parity <select id='serialParity' onchange='setSerialProperties(" + deviceId + ",jQuery(\"#serialDevice\").val())'><option value='none'>None</option><option value='even'>Even</option><option value='odd'>Odd</option></select>";
+  htmlResult += " Stop bits <select id='serialStop' onchange='setSerialProperties(" + deviceId + ",jQuery(\"#serialDevice\").val())'><option value='0'>0</option><option value='1'>1</option><option value='2'>2</option></select>";
   htmlResult += "</p>";
 
   /* Serial proxy over Ethernet. */
   htmlResult += "<p><input type='radio' name='connectionType' value='ip' ";
   if (currentConnectionType == "ip") htmlResult += "checked='checked' ";
-  htmlResult += "onclick='setIPDevice(" + deviceId + ",$F(ipaddress),$F(tcpport))'/>Serial proxy on another machine ";
+  htmlResult += "onclick='setIPDevice(" + deviceId + ",jQuery(\"#ipaddress\").val(),jQuery(\"#tcpport\").val())'/>Serial proxy on another machine ";
   var ipAddress = getIpAddress(deviceId);
   if (ipAddress == undefined) { ipAddress = ""; }
-  htmlResult += "<p style='margin-left: 4em;'>IP address <input id='ipaddress' type='text' size='16' value='" + ipAddress.escapeHTML() + "' onchange='setIPDevice(" + deviceId + ",$F(ipaddress),$F(tcpport))' />";
+  htmlResult += "<p style='margin-left: 4em;'>IP address <input id='ipaddress' type='text' size='16' value='" + ipAddress.escapeHTML() + "' onchange='setIPDevice(" + deviceId + ",jQuery(\"#ipaddress\").val(),jQuery(\"#tcpport\").val())' />";
   var tcpPort = getTcpPort(deviceId);
   if (tcpPort == undefined) { tcpPort = ""; }
-  htmlResult += " TCP port <input id='tcpport' type='text' size='6' value='" + tcpPort.escapeHTML() + "' onchange='setIPDevice(" + deviceId + ",$F(ipaddress),$F(tcpport))' /></p> ";
+  htmlResult += " TCP port <input id='tcpport' type='text' size='6' value='" + tcpPort.escapeHTML() + "' onchange='setIPDevice(" + deviceId + ",jQuery(\"#ipaddress\").val(),jQuery(\"#tcpport\").val())' /></p> ";
   htmlResult += "</p>";
 
   htmlResult += "</form>";
@@ -292,7 +292,7 @@ function serialConnection(deviceId)
     if (ioPortElement != undefined)
     {
       var ioPortHardcoded = ioPortElement.textContent.trim();
-      $('tcpport').setValue(ioPortHardcoded).disable();
+      jQuery('#tcpport').val(ioPortHardcoded).get(0).disabled = true;
     }
   });
 }
