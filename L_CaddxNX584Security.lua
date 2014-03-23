@@ -815,6 +815,9 @@ function updateZoneDevice(deviceId, zone)
 			local tripped = ZONE_STATUS[zone]["isFaulted"] and "1" or "0"
 			debug("Tripped: " .. tripped)
 			luup.variable_set(ALARM_ZONE_SERVICEID, "Tripped", tripped, zoneDevice)
+			if (tripped == "1") then
+				luup.variable_set(ALARM_ZONE_SERVICEID, "LastTrip", os.time(), zoneDevice)
+			end
 		end
 
 		-- Invert logic because alarm panel speaks of "is bypassed".
