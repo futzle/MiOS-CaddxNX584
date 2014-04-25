@@ -17,6 +17,21 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+var entityMap = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': '&quot;',
+  "'": '&#39;',
+  "/": '&#x2F;'
+};
+
+function escapeHtml(string) {
+  return String(string).replace(/[&<>"'\/]/g, function (s) {
+    return entityMap[s];
+  });
+}
+
 /**********
  *
  * Configuration tab
@@ -214,15 +229,15 @@ function zoneTab(device)
 			if (!zoneFound) { continue; }
 			html += '<tr>';
 			html += '<td>' + z + '</td>';
-			html += '<td>' + zoneName.escapeHTML() + '</td>';
-			html += '<td>' + zoneRoom.escapeHTML() + '</td>';
+			html += '<td>' + escapeHtml(zoneName) + '</td>';
+			html += '<td>' + escapeHtml(zoneRoom) + '</td>';
 			html += '<td id="caddx_zoneInfo' + z + '"></td>';
 			// Find nicer names for the standard sensor types.
 			if (type == "D_MotionSensor1.xml") { type = "Motion"; }
 			if (type == "D_SmokeSensor1.xml") { type = "Smoke"; }
 			if (type == "D_TempLeakSensor1.xml") { type = "TempLeak"; }
 			if (type == "D_DoorSensor1.xml") { type = "Door"; }
-			html += '<td>' + type.escapeHTML() + '</td>';
+			html += '<td>' + escapeHtml(type) + '</td>';
 			html += '<td><input type="button" value="Delete" onclick="deleteExistingZone(' + z + ',this,' + device + ')"></input></td>';
 			html += '</tr>';
 			existingZone[z] = true;
@@ -775,7 +790,7 @@ function usersTabWithConfiguration(div, getUserInformationEnabled, setUserCodeEn
 		{
 			table += '<tr class="caddx_user">';
 			table += '<td class="caddx_usernum">' + u + '</td>';
-			table += '<td><input size="17" type="text" class="caddx_username" onchange="nameUser(' + u + ',this,' + device + ')" value="' + username.escapeHTML() + '"></input></td>';
+			table += '<td><input size="17" type="text" class="caddx_username" onchange="nameUser(' + u + ',this,' + device + ')" value="' + escapeHtml(username) + '"></input></td>';
 			if (u < 98) // Magical user numbers are up in this range, and don't have PINs or authorizations.
 			{
 				if (getUserInformationEnabled || setUserCodeEnabled)
@@ -976,8 +991,8 @@ function getScanUserResult(u, pinCell, authorizationCell, actionCell, setUserCod
 					var masterUserProtect = (get_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "MasterUserProtect", 0) != "0");
 					if ((!masterUserProtect || !(userInfo.authorization.master)) && setUserCodeEnabled)
 					{
-						pinCell.html('<input type="text" size="' + pinLength + '" value="' + userInfo.pin.escapeHTML()+ '"></input>');
-						if (actionCell.select('.caddx_useraction_setpin').length == 0)
+						pinCell.html('<input type="text" size="' + pinLength + '" value="' + escapeHtml(userInfo.pin)+ '"></input>');
+						if (jQuery(actionCell).find('.caddx_useraction_setpin').length == 0)
 						{
 							// Add "Set PIN" button.
 							var setPinButton = jQuery('<input>');
@@ -1057,12 +1072,12 @@ function getScanUserResult(u, pinCell, authorizationCell, actionCell, setUserCod
 
 function setUserPin(u, button, pinLength, device)
 {
-	var pinCell = button.parentNode.parentNode.select('.caddx_userpin');
+	var pinCell = jQuery(button.parentNode.parentNode).find('.caddx_userpin');
 
-	var masterPin = jQuery('#caddx_existingUsersMasterPin');
+	var masterPin = jQuery('#caddx_existingUsersMasterPin').val();
     if (masterPin.length != pinLength) return;
 
-	var userPin = pinCell.select('input').val();
+	var userPin = pinCell.find('input').val();
     if (userPin == "----" && 4 == pinLength) userPin = "";
     if (userPin == "------" && 6 == pinLength) userPin = "";
     if (userPin != "" && userPin.length != pinLength) return;
@@ -1145,7 +1160,9 @@ function nameUser(u, text, device)
 function hideExistingUser(u, button, device)
 {
 	// Grey out buttons.
-	button.parentNode.parentNode.select('input').invoke('disable');
+	jQuery(button.parentNode.parentNode).find('input').each(function(i, n) {
+		n.disabled = true;
+	});
 	// Can't actually delete.  Closest is to set to empty string.
 	set_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "User" + u, "", 0);
 	jQuery(button).val("Hidden");
@@ -1155,7 +1172,7 @@ function hideExistingUser(u, button, device)
 // Add a user from a scan.
 function addScannedUser(u, button, device)
 {
-	var nameInput = button.parentNode.parentNode.select('.caddx_username');
+	var nameInput = jQuery(button.parentNode.parentNode).find('.caddx_username');
 	jQuery(button).get(0).disabled = true;
 	jQuery(nameInput).get(0).disabled = true;
 	set_device_state(device, "urn:futzle-com:serviceId:CaddxNX584Security1", "User" + u, jQuery(nameInput).val(), 0);
@@ -1303,7 +1320,7 @@ function getScanLogEventResult(sp, count, table, row, device)
 
 			// Message.
 			html += '<td>';
-			html += log.messageText.escapeHTML();
+			html += escapeHtml(log.messageText);
 			html += '</td>';
 
 			row.html(html);

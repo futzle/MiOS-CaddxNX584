@@ -43,6 +43,21 @@ var ipv4PortPattern = new RegExp("^(" + numberPattern255 + "\\."
   + numberPattern255 + "\\." + numberPattern255 + "\\." + numberPattern255 + "):("
   + numberPattern65535 + ")$");
 
+var entityMap = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': '&quot;',
+  "'": '&#39;',
+  "/": '&#x2F;'
+};
+
+function escapeHtml(string) {
+  return String(string).replace(/[&<>"'\/]/g, function (s) {
+    return entityMap[s];
+  });
+}
+
 function getConnectionType(deviceId)
 {
   var ioDevice = get_device_state(deviceId, "urn:micasaverde-com:serviceId:HaDevice1", "IODevice", 0);
@@ -61,7 +76,7 @@ function getConnectionType(deviceId)
 /* Get a list of all serial devices. */
 function getSerialDevices(deviceId)
 {
-  return jsonp.ud.devices.findAll(function(d) {
+  return jQuery.grep(jsonp.ud.devices, function(d) {
     return d.device_type == "urn:micasaverde-org:device:SerialPort:1";
   } );
 }
@@ -232,7 +247,7 @@ function serialConnection(deviceId)
   htmlResult += "<option value=''>None</option>";
   var serialDevices = getSerialDevices(deviceId);
   var ownedSerialDeviceId;
-  htmlResult += serialDevices.inject("", function(htmlResult, d) {
+  jQuery.each(serialDevices, function(i, d) {
     htmlResult += "<option value='" + d.id + "'";
     var deviceOwner = getDeviceOfSerialDevice(d.id);
     if (deviceOwner != undefined)
@@ -249,14 +264,13 @@ function serialConnection(deviceId)
         htmlResult += " disabled='disabled'";
       }
     }
-    htmlResult += ">" + d.name.escapeHTML();
+    htmlResult += ">" + escapeHtml(d.name);
     // Tell user who owns this device (if it's not us).
     if (deviceOwner != undefined && deviceOwner.id != deviceId)
     {
-      htmlResult += " [" + deviceOwner.name.escapeHTML() + "]";
+      htmlResult += " [" + escapeHtml(deviceOwner.name) + "]";
     }
     htmlResult += "</option>";
-    return htmlResult;
   });
   htmlResult += "</select>";
   htmlResult += "</p>";
@@ -273,10 +287,10 @@ function serialConnection(deviceId)
   htmlResult += "onclick='setIPDevice(" + deviceId + ",jQuery(\"#ipaddress\").val(),jQuery(\"#tcpport\").val())'/>Serial proxy on another machine ";
   var ipAddress = getIpAddress(deviceId);
   if (ipAddress == undefined) { ipAddress = ""; }
-  htmlResult += "<p style='margin-left: 4em;'>IP address <input id='ipaddress' type='text' size='16' value='" + ipAddress.escapeHTML() + "' onchange='setIPDevice(" + deviceId + ",jQuery(\"#ipaddress\").val(),jQuery(\"#tcpport\").val())' />";
+  htmlResult += "<p style='margin-left: 4em;'>IP address <input id='ipaddress' type='text' size='16' value='" + escapeHtml(ipAddress) + "' onchange='setIPDevice(" + deviceId + ",jQuery(\"#ipaddress\").val(),jQuery(\"#tcpport\").val())' />";
   var tcpPort = getTcpPort(deviceId);
   if (tcpPort == undefined) { tcpPort = ""; }
-  htmlResult += " TCP port <input id='tcpport' type='text' size='6' value='" + tcpPort.escapeHTML() + "' onchange='setIPDevice(" + deviceId + ",jQuery(\"#ipaddress\").val(),jQuery(\"#tcpport\").val())' /></p> ";
+  htmlResult += " TCP port <input id='tcpport' type='text' size='6' value='" + escapeHtml(tcpPort) + "' onchange='setIPDevice(" + deviceId + ",jQuery(\"#ipaddress\").val(),jQuery(\"#tcpport\").val())' /></p> ";
   htmlResult += "</p>";
 
   htmlResult += "</form>";
