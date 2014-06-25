@@ -86,8 +86,8 @@ function getSerialDevices(deviceId)
    that "owns" the given serial device. */
 function getDeviceOfSerialDevice(serialDeviceId)
 {
-  var matches = jsonp.ud.devices.findAll(function(d) {
-    return d.states.findAll(function(state) {
+  var matches = jQuery.grep(jsonp.ud.devices, function(d) {
+    return jQuery.grep(d.states, function(state) {
       return state.service == "urn:micasaverde-com:serviceId:HaDevice1" &&
         state.variable == "IODevice" &&
         state.value == serialDeviceId;
