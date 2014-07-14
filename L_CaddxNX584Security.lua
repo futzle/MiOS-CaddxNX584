@@ -280,7 +280,7 @@ function caddxInitialize(deviceId)
 	ZONE_STATUS = {}
 	ZONE_VALID = {}
 	zoneCount = 0
-	for zone = 1,48 do
+	for zone = 1,128 do
 		if (setUpZone(ROOT_DEVICE, childDevices, zone)) then
 			zoneCount = zoneCount + 1
 			ZONE_VALID[zone] = true
