@@ -1527,6 +1527,12 @@ function jobZoneNameScan(lul_device, lul_settings, lul_job)
 				ZONE_SCAN[z].name = zoneName 
 				return pendingJobDone(getJobId(lul_job), 4)
 			end,
+			[28] = function (deviceId, message)
+				debug("Handling message: 0x1C Command Failed")
+				-- Don't know why the interface sometimes returns this.
+				-- Be cautious and call it a failure.
+				return pendingJobDone(getJobId(lul_job), 2)
+			end,
 			[31] = function (deviceId, message)
 				debug("Handling message: 0x1F Message Reject")
 				-- The interface can't give me a zone name after all.
