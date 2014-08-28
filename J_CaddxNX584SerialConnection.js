@@ -61,7 +61,7 @@ function escapeHtml(string) {
 function getConnectionType(deviceId)
 {
   var ioDevice = get_device_state(deviceId, "urn:micasaverde-com:serviceId:HaDevice1", "IODevice", 0);
-  var ipDevice = jsonp.get_device_by_id(deviceId);
+  var ipDevice = jQuery.grep(jsonp.ud.devices, function(o, i) { return o.id == deviceId; })[0];
   if (ioDevice != undefined && ioDevice != "") { return "ioDevice"; }
   if (ipDevice != undefined)
   {
@@ -100,7 +100,7 @@ function getDeviceOfSerialDevice(serialDeviceId)
 /* Get the IP address, coded in the ip special variable. */
 function getIpAddress(deviceId)
 {
-  var ipDevice = jsonp.get_device_by_id(deviceId);
+  var ipDevice = jQuery.grep(jsonp.ud.devices, function(o, i) { return o.id == deviceId; })[0];
   var ip = ipDevice.ip;
   if (ip == undefined) { return undefined; }
   if (ip == "") { return undefined; }
@@ -113,7 +113,7 @@ function getIpAddress(deviceId)
 /* Get the TCP port, coded in the ip special variable. */
 function getTcpPort(deviceId)
 {
-  var ipDevice = jsonp.get_device_by_id(deviceId);
+  var ipDevice = jQuery.grep(jsonp.ud.devices, function(o, i) { return o.id == deviceId; })[0];
   var ip = ipDevice.ip;
   if (ip == undefined) { return undefined; }
   if (ip == "") { return undefined; }
@@ -166,7 +166,8 @@ function enableSelectedOption(deviceId, currentConnectionType, ownedSerialDevice
 function setSerialDevice(deviceId, serialDeviceId)
 {
   set_device_state(deviceId, "urn:micasaverde-com:serviceId:HaDevice1", "IODevice", serialDeviceId, 0);
-  jsonp.get_device_by_id(deviceId).ip = "";
+  var ipDevice = jQuery.grep(jsonp.ud.devices, function(o, i) { return o.id == deviceId; })[0];
+  ipDevice.ip = "";
   enableSelectedOption(deviceId, "ioDevice", serialDeviceId);
 }
 
@@ -186,11 +187,13 @@ function setIPDevice(deviceId, ipAddress, tcpPort)
 {
   if (jQuery('#tcpport').get(0).disabled || tcpPort == undefined || tcpPort == "")
   {
-    jsonp.get_device_by_id(deviceId).ip = ipAddress;
+    var ipDevice = jQuery.grep(jsonp.ud.devices, function(o, i) { return o.id == deviceId; })[0];
+    ipDevice.ip = "";
   }
   else
   {
-    jsonp.get_device_by_id(deviceId).ip = ipAddress + ":" + tcpPort;
+    var ipDevice = jQuery.grep(jsonp.ud.devices, function(o, i) { return o.id == deviceId; })[0];
+    ipDevice.ip = ipAddress + ":" + tcpPort;
   }
   set_device_state(deviceId, "urn:micasaverde-com:serviceId:HaDevice1", "IODevice", "", 0);
   enableSelectedOption(deviceId, "ip", undefined);
@@ -212,7 +215,7 @@ function withUpnpFileName(deviceId, filename, f)
    execute the function f() on the resulting XML. */
 function withImplementationFile(deviceId, f)
 {
-  var device = jsonp.get_device_by_id(deviceId);
+  var device = jQuery.grep(jsonp.ud.devices, function(o, i) { return o.id == deviceId; })[0];
   if (device.impl_file != "")
   {
     return withUpnpFileName(deviceId, device.impl_file, f);

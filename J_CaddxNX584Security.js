@@ -216,12 +216,13 @@ function zoneTab(device)
 					var zoneRoomId = jsonp.ud.devices[checkZoneDevice].room;
 					if (zoneRoomId == "0")
 					{
-						// Room 0 is unassigned, would break get_room_by_id().
+						// Room 0 is unassigned.
 						zoneRoom = "Unassigned";
 					}
 					else
 					{
-						zoneRoom = jsonp.get_room_by_id(zoneRoomId).name;
+						var room = jQuery.grep(jsonp.ud.rooms, function (o, i) { return o.id == zoneRoomId; })[0];
+						zoneRoom = room.name;
 					}
 					zoneFound = true;
 				}
