@@ -31,6 +31,7 @@
             },
             "Position": "0",
             "TabType": "flash",
+            "top_navigation_tab": 1,
             "SceneGroup": [
               {
                 "id": "1",
@@ -301,6 +302,7 @@
                         "text": "Police"
                     },
                     "Display": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition2",
                         "Top": 180,
                         "Left": 50,
                         "Width": 75,
@@ -326,6 +328,7 @@
                         "text": "Medical"
                     },
                     "Display": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition2",
                         "Top": 180,
                         "Left": 135,
                         "Width": 75,
@@ -351,6 +354,7 @@
                         "text": "Fire"
                     },
                     "Display": {
+                        "Service": "urn:micasaverde-com:serviceId:AlarmPartition2",
                         "Top": 180,
                         "Left": 220,
                         "Width": 75,

@@ -820,8 +820,9 @@ function updateZoneDevice(deviceId, zone)
 			end
 		end
 
-		-- Invert logic because alarm panel speaks of "is bypassed".
-    if (ZONE_STATUS[zone]["isBypassed"] ~= nil) then
+		-- If bypass control is disabled by interface, don't change it.
+    if (CAPABILITY_ZONE_BYPASS and ZONE_STATUS[zone]["isBypassed"] ~= nil) then
+			-- Invert logic because alarm panel speaks of "is bypassed".
 			local armed = ZONE_STATUS[zone]["isBypassed"] and "0" or "1"
 			debug("Armed: " .. armed)
 			luup.variable_set(ALARM_ZONE_SERVICEID, "Armed", armed, zoneDevice)
@@ -1770,9 +1771,11 @@ function jobSetArmed(lul_device, lul_settings, lul_job)
 	debug("Job: Zone: SetArmed " .. lul_device .. " " .. lul_settings.newArmedValue .. " job " .. getJobId(lul_job))
 	
 	if (not CAPABILITY_ZONE_BYPASS) then
-		-- Cannot bypass; return error.
-		return 2, nil
+		-- Bypass state is internal to Vera.
+		luup.variable_set(ALARM_ZONE_SERVICEID, "Armed", lul_settings.newArmedValue, lul_device)
+		return 4, nil
 	end
+	-- Set bypass status in alarm interface.
 	local zone = tonumber(string.match(luup.devices[lul_device].id, "%d+"))
 	if (ZONE_STATUS[zone]["isBypassed"] == (lul_settings.newArmedValue == "0")) then
 		-- Already the correct state, nothing to do.

@@ -25,6 +25,7 @@
             },
             "Position": "0",
             "TabType": "flash",
+            "top_navigation_tab": 1,
             "SceneGroup": [
                 {
                     "id": 1,
