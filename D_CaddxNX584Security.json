@@ -6,7 +6,7 @@
     "imgIconMin": "pics\/devices\/Door_UNLOCKED.png",
     "imgIconMax": "pics\/devices\/Door_LOCKED.png",
     "halloIconsDir": "pics\/hallo",
-    "inScene": "0",
+    "inScene": "1",
     "DisplayStatus": {
     },
     "doc_url": {
@@ -441,6 +441,40 @@
                         "prefix": "User PIN",
                         "suffix": "",
                         "name": "UserPIN"
+                    }
+                }
+            }
+        },
+        "group_2": {
+            "cmd_1": {
+                "label": "Send X10 command",
+                "serviceId": "urn:futzle-com:serviceId:CaddxNX584Security1",
+                "action": "UserSendX10",
+                "argumentList": {
+                    "argument_1": {
+                        "dataType": "string",
+                        "defaultValue": "",
+                        "prefix": "House Code (A-P)",
+                        "suffix": "",
+                        "name": "HouseCode"
+                    },
+                    "argument_2": {
+                        "dataType": "ui1",
+                        "defaultValue": "",
+                        "allowedValueRange": {
+                            "minimum": "1",
+                            "maximum": "16"
+                        },
+                        "prefix": "Unit Code (1-16)",
+                        "suffix": "",
+                        "name": "UnitCode"
+                    },
+                    "argument_3": {
+                        "dataType": "string",
+                        "defaultValue": "",
+                        "prefix": "X10 Function Code",
+                        "suffix": "",
+                        "name": "X10FunctionCode"
                     }
                 }
             }

@@ -94,5 +94,25 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
         </argument>
       </argumentList>
     </action>
+    <action>
+      <name>UserSendX10</name>
+      <argumentList>
+        <argument>
+          <name>HouseCode</name>
+          <direction>in</direction>
+          <relatedStateVariable>string</relatedStateVariable>
+        </argument>
+        <argument>
+          <name>UnitCode</name>
+          <direction>in</direction>
+          <relatedStateVariable>ui4</relatedStateVariable>
+        </argument>
+        <argument>
+          <name>X10FunctionCode</name>
+          <direction>in</direction>
+          <relatedStateVariable>string</relatedStateVariable>
+        </argument>
+      </argumentList>
+    </action>
   </actionList>
 </scpd>

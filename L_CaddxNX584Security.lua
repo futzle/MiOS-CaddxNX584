@@ -35,6 +35,8 @@
 --   - partial (away) arm with PIN
 --   - disarm with PIN
 --
+-- Contributors:
+-- * X10 interface supplied by brandonharville
 
 module ("L_CaddxNX584Security", package.seeall)
 
@@ -215,11 +217,13 @@ function caddxInitialize(deviceId)
 			luup.io.open(ROOT_DEVICE, ipv4, tcpport)
 		else
 			luup.log("No serial device specified; exiting")
+			luup.set_failure(1, ROOT_DEVICE)
 			return false, "No serial device specified. Visit the Connect tab and choose how the device is attached.", string.format("%s[%d]", luup.devices[ROOT_DEVICE].description, ROOT_DEVICE)
 		end
 	else
 		luup.log("Opening serial port")
 	end
+	luup.set_failure(0, ROOT_DEVICE)
 
 	-- Help prevent race condition
 	luup.io.intercept()
@@ -1958,4 +1962,74 @@ function jobRequestPanicMode(lul_device, lul_settings, lul_job)
 	debug("Job: Started")
 	-- Either the timeout or incoming task will be called next.
 	return 5, 10
+end
+
+-- jobUserSendX10(lul_device, lul_settings, lul_job)
+-- Invoked by advanced scene settings for Caddx
+function jobUserSendX10(lul_device, lul_settings, lul_job)
+   debug("Job: Alarm: UserSendX10: HouseCode: " .. lul_settings.HouseCode .. " UnitCode: " ..  lul_settings.UnitCode .. " FunctionCode: " .. lul_settings.X10FunctionCode .. " " .. lul_device .. " job " ..  getJobId(lul_job))
+
+   --Validate HouseCode Input
+   --Length and Value
+   if (string.len(lul_settings.HouseCode) > 1 or string.byte(string.upper(lul_settings.HouseCode)) < 65 or string.byte(string.upper(lul_settings.HouseCode)) > 80 ) then
+       --House code entered was not A-P
+       debug("UserSendX10: Improper HouseCode provided")
+       debug("UserSendX10: Length: " .. string.len(lul_settings.HouseCode))
+       debug("UserSendX10: House Code Value: " .. string.upper(lul_settings.HouseCode))
+       return 2, nil
+   end
+   
+   --Validate UnitCode Input
+   --Value
+   if tonumber(lul_settings.UnitCode) < 1 or tonumber(lul_settings.UnitCode) > 16 then
+       --Unit code entered was not 1-16
+       debug("UserSendX10: Improper UnitCode provided")
+       return 2, nil
+   end
+   
+   --Validate X10FunctionCode
+   --Value
+   local X10FunctionCodeValue = 0
+   if lul_settings.X10FunctionCode == "All units off" then X10FunctionCodeValue = 8
+      elseif lul_settings.X10FunctionCode == "All lights on" then X10FunctionCodeValue = 24
+      elseif lul_settings.X10FunctionCode == "On" then X10FunctionCodeValue = 40
+      elseif lul_settings.X10FunctionCode == "Off" then X10FunctionCodeValue = 56
+      elseif lul_settings.X10FunctionCode == "Dim" then X10FunctionCodeValue = 88
+      elseif lul_settings.X10FunctionCode == "Bright" then X10FunctionCodeValue = 72
+      elseif lul_settings.X10FunctionCode == "All lights off" then X10FunctionCodeValue = 104
+      else
+         X10FunctionCodeValue = nil
+         debug("UserSendX10: Improper X10FunctionCode provided")
+         return 2, nil
+   end      
+
+   local houseCode = string.byte(string.upper(lul_settings.HouseCode)) - 65
+   if (houseCode == nil) then return 2, nil end
+
+   local unitCode = tonumber(lul_settings.UnitCode) - 1
+   if (unitCode == nil) then return 2, nil end
+
+   local X10FunctionCode = X10FunctionCodeValue
+   if (X10FunctionCodeValue == nil) then return 2, nil end
+
+   -- Ask for this log entry.
+   addPendingJob(getJobId(lul_job),
+      "\041" .. string.char(houseCode) .. string.char(unitCode) .. string.char(X10FunctionCode),
+      {
+         [29] = function(deviceId, message)
+            -- Nothing more to do.  The interface will
+            -- send a snapshot with the updated info RSN,
+            -- and we'll update the partition device then.
+            return pendingJobDone(getJobId(lul_job), 4)
+         end,
+         [31] = function(deviceId, message)
+            return pendingJobDone(getJobId(lul_job), 2)
+         end,
+      }
+   )
+   debug("Job: Processing send queue")
+   processSendQueue()
+   debug("Job: Started")
+   -- Either the timeout or incoming task will be called next.
+   return 5, 10
 end

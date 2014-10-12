@@ -139,5 +139,15 @@ end
 				return plugin.handleReadByteResult(lul_job, lul_device, plugin.readByte(lul_data))
 			</incoming>
 		</action>
+    <action>
+      <serviceId>urn:futzle-com:serviceId:CaddxNX584Security1</serviceId>
+      <name>UserSendX10</name>
+      <job>
+        return plugin.jobUserSendX10(lul_device, lul_settings, lul_job)
+      </job>
+      <incoming>
+        return plugin.handleReadByteResult(lul_job, lul_device, plugin.readByte(lul_data))
+      </incoming>
+    </action>
 	</actionList>
 </implementation>
