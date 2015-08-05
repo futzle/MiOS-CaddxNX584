@@ -139,16 +139,16 @@ function enableSelectedOption(deviceId, currentConnectionType, ownedSerialDevice
     jQuery('#serialDevice').get(0).disabled = false;
     if (ownedSerialDeviceId != undefined && ownedSerialDeviceId != "")
     {
-      var serialSpeed = jsonp.get_lu_device_variable_value(ownedSerialDeviceId, "urn:micasaverde-org:serviceId:SerialPort1", "baud", 0);
+      var serialSpeed = get_device_state(ownedSerialDeviceId, "urn:micasaverde-org:serviceId:SerialPort1", "baud", 0);
       if (serialSpeed == undefined || serialSpeed == "") serialSpeed = "9600";  // Default
       jQuery('#serialSpeed').val(serialSpeed).get(0).disabled = false;
-      var serialData = jsonp.get_lu_device_variable_value(ownedSerialDeviceId, "urn:micasaverde-org:serviceId:SerialPort1", "databits", 0);
+      var serialData = get_device_state(ownedSerialDeviceId, "urn:micasaverde-org:serviceId:SerialPort1", "databits", 0);
       if (serialData == undefined || serialData == "") serialData = "8";  // Default
       jQuery('#serialData').val(serialData).get(0).disabled = false;
-      var serialParity = jsonp.get_lu_device_variable_value(ownedSerialDeviceId, "urn:micasaverde-org:serviceId:SerialPort1", "parity", 0);
+      var serialParity = get_device_state(ownedSerialDeviceId, "urn:micasaverde-org:serviceId:SerialPort1", "parity", 0);
       if (serialParity == undefined || serialParity == "") serialParity = "none";  // Default
       jQuery('#serialParity').val(serialParity).get(0).disabled = false;
-      var serialStop = jsonp.get_lu_device_variable_value(ownedSerialDeviceId, "urn:micasaverde-org:serviceId:SerialPort1", "stopbits", 0);
+      var serialStop = get_device_state(ownedSerialDeviceId, "urn:micasaverde-org:serviceId:SerialPort1", "stopbits", 0);
       if (serialStop == undefined || serialStop == "") serialStop = "1";  // Default
       jQuery('#serialStop').val(serialStop).get(0).disabled = false;
     }
